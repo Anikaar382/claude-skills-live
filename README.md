@@ -1,5 +1,7 @@
 # skills-live
 
+![validate](https://github.com/pjdurden/skills-live/actions/workflows/validate.yml/badge.svg)
+
 An automatically verified index of Claude Code and Agent Skills tooling.
 
 > ✅ **0 dead entries · 311 verified · last checked 2026-08-06 22:34 UTC**

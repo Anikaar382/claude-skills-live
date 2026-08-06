@@ -107,3 +107,15 @@ test("rendering with same ids but reversed input order produces byte-identical o
   const data2: SkillsFile = { version: 1, entries: [e2, e1] }
   expect(renderReadme(data1, NOW)).toBe(renderReadme(data2, NOW))
 })
+
+test("the header carries the static validate workflow badge", () => {
+  const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
+  expect(md).toContain(
+    "![validate](https://github.com/pjdurden/skills-live/actions/workflows/validate.yml/badge.svg)",
+  )
+})
+
+test("the badge sits in the header, above the first kind section", () => {
+  const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
+  expect(md.indexOf("badge.svg")).toBeLessThan(md.indexOf("## "))
+})

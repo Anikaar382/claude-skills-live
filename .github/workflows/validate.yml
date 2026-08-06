@@ -1,8 +1,17 @@
 name: validate
 on:
   pull_request:
-  push:
-    branches: [main]
+  # The staleness gate exists to catch a silently dead scheduler. It used to
+  # run only on push:main, but a push to main happens only when a refresh PR
+  # merges — which is precisely what stops happening when the bot dies. Dead
+  # scheduler, no PR, no merge, no push, no validate run, badge frozen green
+  # forever. Its own trigger has to be a clock, not the thing it is watching.
+  #
+  # push:main is gone entirely: it also meant that merging a discover PR that
+  # had sat in review for three days turned main red on arrival, for age
+  # rather than for content.
+  schedule:
+    - cron: "30 5 * * *"
 
 permissions:
   contents: read
@@ -20,8 +29,12 @@ jobs:
       # The 48h staleness gate is a property of main (did the scheduled
       # refresh silently break?), not of a proposed change. A discover PR is
       # meant to sit open for multi-day human review, so it must not fail
-      # its own gate just for being old. Schema + reproducibility still run
-      # either way.
+      # its own gate just for being old. Schema, reproducibility and the
+      # no-dead-entries gate still run either way.
+      #
+      # The two conditions are `== 'pull_request'` and `!= 'pull_request'`, so
+      # they are exhaustive by construction: any trigger added later runs the
+      # full gate rather than silently running neither branch.
       - if: github.event_name == 'pull_request'
         run: bun run src/cli.ts validate --no-staleness
       - if: github.event_name != 'pull_request'

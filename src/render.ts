@@ -44,6 +44,11 @@ export function renderReadme(data: SkillsFile, now: Date): string {
   const lines: string[] = [
     "# skills-live",
     "",
+    // Static markdown, so it goes red on its own with nothing running. The
+    // generated badge below can only ever report what the last successful run
+    // saw; this one reports that a run happened at all.
+    "![validate](https://github.com/pjdurden/skills-live/actions/workflows/validate.yml/badge.svg)",
+    "",
     "An automatically verified index of Claude Code and Agent Skills tooling.",
     "",
     `> ✅ **0 dead entries · ${active.length} verified · last checked ${badgeTime(active, now)}**`,
