@@ -23,9 +23,20 @@ function badgeTime(active: Entry[], now: Date): string {
   return `${stamp.slice(0, 10)} ${stamp.slice(11, 16)} UTC`
 }
 
+function escapeMarkdownCell(text: string): string {
+  // Escape pipe characters and collapse whitespace
+  return text
+    .replace(/\|/g, "\\|")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 function row(e: Entry): string {
   const stars = e.metrics.stars.toLocaleString("en-US")
-  return `| [${e.id}](${e.url}) | ${stars} | ${e.metrics.pushed_at} | ${e.summary} |`
+  const id = escapeMarkdownCell(e.id)
+  const summary = escapeMarkdownCell(e.summary)
+  return `| [${id}](${e.url}) | ${stars} | ${e.metrics.pushed_at} | ${summary} |`
 }
 
 export function renderReadme(data: SkillsFile, now: Date): string {
@@ -47,7 +58,7 @@ export function renderReadme(data: SkillsFile, now: Date): string {
   for (const kind of KIND_ORDER) {
     const group = active
       .filter((e) => e.kind === kind)
-      .sort((a, b) => b.metrics.stars - a.metrics.stars || (a.id < b.id ? -1 : 1))
+      .sort((a, b) => b.metrics.stars - a.metrics.stars || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     if (group.length === 0) continue
     lines.push(`## ${KIND_HEADING[kind]}`, "", "| Repo | Stars | Last push | What |", "|---|---|---|---|")
     for (const e of group) lines.push(row(e))
@@ -59,6 +70,6 @@ export function renderReadme(data: SkillsFile, now: Date): string {
 }
 
 export function renderJson(data: SkillsFile): string {
-  const entries = activeOf(data).sort((a, b) => (a.id < b.id ? -1 : 1))
+  const entries = activeOf(data).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
   return JSON.stringify({ version: 1, entries }, null, 2) + "\n"
 }

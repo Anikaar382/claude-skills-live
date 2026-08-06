@@ -28,6 +28,6 @@ export function loadGraveyard(path: string): GraveyardFile {
 }
 
 export function saveGraveyard(path: string, data: GraveyardFile): void {
-  const entries = [...data.entries].sort((a, b) => (a.id < b.id ? -1 : 1))
+  const entries = [...data.entries].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
   writeFileSync(path, stringify(GraveyardFileSchema.parse({ version: 1, entries }), YAML_OPTS))
 }

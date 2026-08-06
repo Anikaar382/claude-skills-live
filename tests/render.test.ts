@@ -73,3 +73,37 @@ test("uses the most recent last_checked across active entries for the badge", ()
   })
   expect(renderReadme({ version: 1, entries: [older, newer] }, NOW)).toContain("2026-08-06 09:30 UTC")
 })
+
+test("summary containing pipe character is escaped", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/pipe", 1, { summary: "CLI | API tool" })] }
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("CLI \\| API tool")
+})
+
+test("summary containing newline renders on a single line", () => {
+  const singleLineSummary = "Single line summary"
+  const multiLineSummary = "Multi\nline\nsummary"
+  const singleLineData: SkillsFile = { version: 1, entries: [entry("a/single", 1, { summary: singleLineSummary })] }
+  const multiLineData: SkillsFile = { version: 1, entries: [entry("a/multi", 1, { summary: multiLineSummary })] }
+  const singleMd = renderReadme(singleLineData, NOW)
+  const multiMd = renderReadme(multiLineData, NOW)
+  const singleLineCount = singleMd.split("\n").length
+  const multiLineCount = multiMd.split("\n").length
+  expect(multiLineCount).toBe(singleLineCount)
+  expect(multiMd).toContain("Multi line summary")
+})
+
+test("summary with tabs and whitespace runs collapses to single spaces", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/ws", 1, { summary: "Text\t\twith  spaces" })] }
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("Text with spaces")
+  expect(md).not.toContain("\t")
+})
+
+test("rendering with same ids but reversed input order produces byte-identical output", () => {
+  const e1 = entry("dup/id", 1, { name: "first" })
+  const e2 = entry("dup/id", 1, { name: "second" })
+  const data1: SkillsFile = { version: 1, entries: [e1, e2] }
+  const data2: SkillsFile = { version: 1, entries: [e2, e1] }
+  expect(renderReadme(data1, NOW)).toBe(renderReadme(data2, NOW))
+})
