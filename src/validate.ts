@@ -4,6 +4,13 @@ import type { Entry, GraveyardFile, SkillsFile } from "./schema"
 
 export const MAX_CHECK_AGE_HOURS = 48
 
+// Governs every time-dependent check together. They are one concern: "is this
+// dataset still fresh?", which is a property of main and of the scheduled
+// refresh, never of a proposed change sitting in review.
+export interface ValidateOptions {
+  staleness?: boolean
+}
+
 const MS_PER_HOUR = 3_600_000
 
 export function checkStaleness(data: SkillsFile, now: Date): string[] {
@@ -26,25 +33,46 @@ function isGraced(entry: Entry, now: Date): boolean {
   return Date.parse(`${until}T00:00:00Z`) > now.getTime()
 }
 
+// reap refuses to touch an entry carrying a human flag reason, in either
+// direction. So an active entry flagged `dispute` or `blocked` that later goes
+// archived would fail checkNoDead forever, with no automated route back to
+// green — the same deadlock the grace exemption exists to prevent, and it gets
+// the same exemption. The entry is still held by a human decision; CI is not
+// the right place to shout about it.
+function isHumanHeld(entry: Entry): boolean {
+  return entry.flag?.reason === "dispute" || entry.flag?.reason === "blocked"
+}
+
 // The README badge claims "0 dead entries". Nothing computed that number — it
 // was a hardcoded string, so CI could not falsify the headline claim of the
 // whole project. checkStaleness only asks how recently we LOOKED at an entry,
 // never what we saw, so a human PR (or M3's vote-to-keep) could set an
 // archived or three-year-old entry to active and validate would pass.
 //
-// A grace period exempts an entry from both limbs, matching reap: grace is a
-// deliberate "keep this listed for now" decision, and failing CI for an entry
-// the reaper is under instruction not to flag would leave main red with no
-// automated path back to green.
-export function checkNoDead(data: SkillsFile, now: Date): string[] {
+// A grace period, or a human hold, exempts an entry from both limbs, matching
+// reap: both are deliberate "keep this listed for now" decisions, and failing
+// CI for an entry the reaper is under instruction not to flag would leave main
+// red with no automated path back to green.
+//
+// The two limbs differ in one respect that matters for where they may run.
+// `archived` is content-derived and time-independent: the answer is the same
+// on any day, so it is always checked. The 90-day limb is a function of the
+// clock, so on a long-lived PR branch it eventually fails for the age of an
+// entry the PR never touched — and the refresh commit that would fix it lands
+// on main, not on the branch. That is the same trap that made push:main an
+// unusable trigger for the staleness gate, so the age limb is governed by the
+// same `staleness` option and is off wherever checkStaleness is off.
+export function checkNoDead(data: SkillsFile, now: Date, opts: ValidateOptions = {}): string[] {
+  const staleness = opts.staleness ?? true
   const problems: string[] = []
   for (const e of data.entries) {
     if (e.status !== "active") continue
-    if (isGraced(e, now)) continue
+    if (isGraced(e, now) || isHumanHeld(e)) continue
     if (e.metrics.archived) {
       problems.push(`${e.id}: listed as active but archived upstream`)
       continue
     }
+    if (!staleness) continue
     const age = daysBetween(e.metrics.pushed_at, now)
     if (age >= STALE_DAYS) {
       problems.push(
@@ -88,10 +116,6 @@ export function checkReproducible(
   return problems
 }
 
-export interface ValidateOptions {
-  staleness?: boolean
-}
-
 export function validate(
   data: SkillsFile,
   readme: string,
@@ -102,10 +126,10 @@ export function validate(
   const staleness = opts.staleness ?? true
   return [
     ...(staleness ? checkStaleness(data, now) : []),
-    // Unconditional: a dead entry is a property of the content, not of how
-    // recently the content was refreshed, so it must fail a PR too and must
-    // not be suppressible with --no-staleness.
-    ...checkNoDead(data, now),
+    // Always runs: its archived limb is content-derived, so a PR that marks an
+    // archived repo active must fail even on a PR build. Its 90-day limb is
+    // time-dependent and honours the same `staleness` option.
+    ...checkNoDead(data, now, { staleness }),
     ...checkReproducible(data, readme, json, now),
   ]
 }

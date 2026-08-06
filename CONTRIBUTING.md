@@ -21,10 +21,22 @@ dedication covers the compilation, the schema and the derived factual data
 about each entry; the `summary` field may quote a repository's own upstream
 description, which remains its author's.
 
-## Removing an entry
+## Delisting vs. removing
 
-Open a PR moving the entry to `graveyard.yaml` with a reason and date. The bot
-does this automatically for anything archived, deleted, or untouched for 90 days.
+These are two different things and only one of them is automated.
+
+**Delisting** is what the bot does. Anything archived, deleted, or untouched
+for 90 days is flagged: it drops out of the README's tables, appears under
+"Recently flagged" with the reason and the date, and stays in `skills.yaml`.
+Nothing is moved to `graveyard.yaml` by automation. If the repo recovers — a
+new push, an unarchive, a deleted repo restored — the next refresh clears the
+flag by itself and the entry returns to the tables.
+
+**Removal** is permanent and always human. Open a PR moving the entry to
+`graveyard.yaml` with a reason and date. That file is the exclusion list for
+entries this project will not carry at all, such as mirrors of leaked or
+proprietary source; CI fails any PR that puts a graveyarded id back into
+`skills.yaml`, and discovery will not re-add it.
 
 ## How the automation works
 

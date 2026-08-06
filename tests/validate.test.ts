@@ -216,3 +216,69 @@ test("checkGraveyard catches a graveyarded entry re-added as flagged, not just a
   }
   expect(checkGraveyard({ version: 1, entries: [e] }, graveyard).length).toBe(1)
 })
+
+// --- residual 1: the 90-day limb is time-dependent and must not run on PRs ---
+
+test("checkNoDead with staleness false skips the 90-day limb", () => {
+  const e = entry("a/b", "2026-08-05T04:00:00Z", {
+    metrics: { stars: 10, pushed_at: "2026-05-08", archived: false, last_checked: "2026-08-05T04:00:00Z" },
+  })
+  const data: SkillsFile = { version: 1, entries: [e] }
+  expect(checkNoDead(data, NOW).length).toBe(1)
+  expect(checkNoDead(data, NOW, { staleness: false })).toEqual([])
+})
+
+test("checkNoDead with staleness false still fires the archived limb", () => {
+  const e = entry("a/b", "2026-08-05T04:00:00Z", {
+    metrics: { stars: 10, pushed_at: "2026-08-01", archived: true, last_checked: "2026-08-05T04:00:00Z" },
+  })
+  const problems = checkNoDead({ version: 1, entries: [e] }, NOW, { staleness: false })
+  expect(problems.length).toBe(1)
+  expect(problems[0]).toContain("archived")
+})
+
+test("a PR build does not go red for the age of an entry it never touched", () => {
+  // The exact time fuse: main's oldest active entry crosses 90 days while a
+  // PR sits open. The refresh commit that would fix it lands on main, not on
+  // the branch, so the PR could never fix itself.
+  const aged = entry("other/untouched", "2026-08-05T04:00:00Z", {
+    metrics: { stars: 10, pushed_at: "2026-05-01", archived: false, last_checked: "2026-08-05T04:00:00Z" },
+  })
+  const data: SkillsFile = { version: 1, entries: [aged] }
+  const prBuild = validate(data, renderReadme(data, NOW), renderJson(data), NOW, {
+    staleness: false,
+  })
+  expect(prBuild).toEqual([])
+  // The same dataset on the scheduled full gate must still fail.
+  const scheduled = validate(data, renderReadme(data, NOW), renderJson(data), NOW)
+  expect(scheduled.length).toBeGreaterThan(0)
+  expect(scheduled.some((p) => p.includes("days ago"))).toBe(true)
+})
+
+// --- residual 2: human-held actives must not deadlock CI ---
+
+test("checkNoDead exempts an active entry held by a dispute flag", () => {
+  const e = entry("a/b", "2026-08-05T04:00:00Z", {
+    flag: { reason: "dispute", since: "2026-06-01", issue: 4, grace_until: null },
+    metrics: { stars: 10, pushed_at: "2020-01-01", archived: true, last_checked: "2026-08-05T04:00:00Z" },
+  })
+  expect(checkNoDead({ version: 1, entries: [e] }, NOW)).toEqual([])
+})
+
+test("checkNoDead exempts an active entry held by a blocked flag", () => {
+  const e = entry("a/b", "2026-08-05T04:00:00Z", {
+    flag: { reason: "blocked", since: "2026-06-01", issue: null, grace_until: null },
+    metrics: { stars: 10, pushed_at: "2020-01-01", archived: true, last_checked: "2026-08-05T04:00:00Z" },
+  })
+  expect(checkNoDead({ version: 1, entries: [e] }, NOW)).toEqual([])
+})
+
+test("an auto flag reason on an active entry is NOT a human hold", () => {
+  // Only dispute and blocked deadlock reap. A stale-flagged active entry that
+  // goes archived is still something the reaper will fix on its next run.
+  const e = entry("a/b", "2026-08-05T04:00:00Z", {
+    flag: { reason: "stale", since: "2026-06-01", issue: null, grace_until: null },
+    metrics: { stars: 10, pushed_at: "2026-08-01", archived: true, last_checked: "2026-08-05T04:00:00Z" },
+  })
+  expect(checkNoDead({ version: 1, entries: [e] }, NOW).length).toBe(1)
+})

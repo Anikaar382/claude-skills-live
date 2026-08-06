@@ -2,6 +2,24 @@ import type { Entry, Flag, Kind, SkillsFile } from "./schema"
 
 type FlaggedEntry = Entry & { flag: Flag }
 
+// ⚠️ MUST BE UPDATED AT FIRST PUSH, and on any later rename or transfer.
+//
+// The whole point of the validate badge is that it goes RED on its own when
+// the automation dies. If this slug does not match the repo's real
+// owner/name, GitHub serves a 404 for the badge image and the README renders
+// "no badge" instead — which reads as absence, not as failure, and silently
+// removes the one watchdog a human reader can see without running anything.
+//
+// A constant rather than an env var on purpose: renderReadme's output is
+// covered byte-for-byte by the reproducibility gate, so anything that could
+// differ between a CI runner and a contributor's shell would turn a config
+// difference into a confusing artifact-mismatch failure. One value, in source,
+// reviewed like any other change.
+export const REPO_SLUG = "pjdurden/skills-live"
+
+export const VALIDATE_BADGE_URL =
+  `https://github.com/${REPO_SLUG}/actions/workflows/validate.yml/badge.svg`
+
 export const KIND_ORDER = ["framework", "skill", "plugin", "mcp", "tool"] as const
 
 export const KIND_HEADING: Record<Kind, string> = {
@@ -75,7 +93,7 @@ export function renderReadme(data: SkillsFile, now: Date): string {
     // Static markdown, so it goes red on its own with nothing running. The
     // generated badge below can only ever report what the last successful run
     // saw; this one reports that a run happened at all.
-    "![validate](https://github.com/pjdurden/skills-live/actions/workflows/validate.yml/badge.svg)",
+    `![validate](${VALIDATE_BADGE_URL})`,
     "",
     "An automatically verified index of Claude Code and Agent Skills tooling.",
     "",

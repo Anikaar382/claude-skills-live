@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { renderJson, renderReadme } from "../src/render"
+import { REPO_SLUG, VALIDATE_BADGE_URL, renderJson, renderReadme } from "../src/render"
 import type { Entry, FlagReason, SkillsFile } from "../src/schema"
 
 function entry(id: string, stars: number, over: Partial<Entry> = {}): Entry {
@@ -236,4 +236,15 @@ test("pipe escaping still holds alongside the new escapes", () => {
   }
   const md = renderReadme(data, NOW)
   expect(md).toContain("CLI \\| \\[API\\] \\<tool\\>")
+})
+
+test("the badge is built from REPO_SLUG, not a second hardcoded literal", () => {
+  const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
+  expect(VALIDATE_BADGE_URL).toBe(
+    `https://github.com/${REPO_SLUG}/actions/workflows/validate.yml/badge.svg`,
+  )
+  expect(md).toContain(`![validate](${VALIDATE_BADGE_URL})`)
+  // A rename must leave exactly one place to change: no other occurrence of
+  // the slug may be baked into the header.
+  expect(md.split(REPO_SLUG).length - 1).toBe(1)
 })
