@@ -153,7 +153,7 @@ Flagging opens an issue and removes the entry from the rendered README (it stays
 each group. Header carries a badge:
 
 ```
-✅ 0 dead entries · 412 verified · last checked 2026-08-06 04:00 UTC
+✅ 0 dead entries · 137 verified · last checked 2026-08-06 04:00 UTC
 ```
 
 Also emits `data/skills.json` for downstream consumers.
@@ -169,6 +169,8 @@ made-up composite score from becoming the thing people game.
 - The bot opens **one issue per flagged entry** — never one per skill. Most entries never get an
   issue, so issue count stays proportional to disputes, not to catalogue size.
 - 👍 = keep, 👎 = remove. Reactions on the issue body are the ballot.
+- `net` = (👍 from eligible voters) − (👎 from eligible voters). Ineligible reactions are counted
+  and displayed but excluded from `net`.
 - The bot posts and edits a running tally comment.
 - **Resolution after 14 days:** net ≤ 0 → bot opens a removal PR; net > 0 → `status` returns to
   `active` with `grace_until` set 180 days out, exempting it from the stale check until then.
