@@ -1,0 +1,35 @@
+name: discover
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - run: bun install --frozen-lockfile
+      - run: bun run src/cli.ts discover
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bot/discover
+          title: "feat: new candidate entries"
+          body: |
+            Candidates that cleared the inclusion bar (>=25 stars, not archived,
+            not a mirror of proprietary source).
+
+            **Review before merging.** Everything lands as `kind: skill` with empty
+            tags; set the correct kind, add tags, and rewrite any summary that reads
+            as marketing copy.
+          commit-message: "feat: new candidate entries"
+          labels: automated, needs-review
