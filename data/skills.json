@@ -1158,23 +1158,6 @@
       }
     },
     {
-      "id": "Piebald-AI/claude-code-system-prompts",
-      "kind": "skill",
-      "name": "claude-code-system-prompts",
-      "url": "https://github.com/Piebald-AI/claude-code-system-prompts",
-      "summary": "All parts of Claude Code's system prompt, 27 builtin tool descriptions, sub agent prompts (Plan/Explore/Task), utility p",
-      "tags": [],
-      "added": "2026-08-06",
-      "source": "discovery",
-      "status": "active",
-      "metrics": {
-        "stars": 12203,
-        "pushed_at": "2026-08-06",
-        "archived": false,
-        "last_checked": "2026-08-06T00:00:00Z"
-      }
-    },
-    {
       "id": "Prat011/awesome-llm-skills",
       "kind": "skill",
       "name": "awesome-llm-skills",
@@ -1918,23 +1901,6 @@
       "metrics": {
         "stars": 2247,
         "pushed_at": "2026-07-03",
-        "archived": false,
-        "last_checked": "2026-08-06T00:00:00Z"
-      }
-    },
-    {
-      "id": "asgeirtj/system_prompts_leaks",
-      "kind": "skill",
-      "name": "system_prompts_leaks",
-      "url": "https://github.com/asgeirtj/system_prompts_leaks",
-      "summary": "Extracted system prompts from Anthropic - Claude Fable 5, Opus 5, Claude Design, Claude Code. OpenAI - ChatGPT GPT-5.6-S",
-      "tags": [],
-      "added": "2026-08-06",
-      "source": "discovery",
-      "status": "active",
-      "metrics": {
-        "stars": 62462,
-        "pushed_at": "2026-08-06",
         "archived": false,
         "last_checked": "2026-08-06T00:00:00Z"
       }

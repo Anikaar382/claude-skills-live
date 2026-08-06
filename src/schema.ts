@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const KindSchema = z.enum(["framework", "skill", "plugin", "mcp", "tool"])
-export const FlagReasonSchema = z.enum(["stale", "archived", "gone", "dispute"])
+export const FlagReasonSchema = z.enum(["stale", "archived", "gone", "dispute", "blocked"])
 export const StatusSchema = z.enum(["active", "flagged", "removed"])
 export const SourceSchema = z.enum(["discovery", "pr", "manual"])
 

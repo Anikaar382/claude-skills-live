@@ -68,6 +68,17 @@ test("rejects a graveyard entry with an id that has no slash", () => {
   expect(() => GraveyardEntrySchema.parse(bad)).toThrow()
 })
 
+test("accepts a graveyard entry with reason blocked", () => {
+  const ok = {
+    id: "obra/superpowers",
+    name: "Superpowers",
+    url: "https://github.com/obra/superpowers",
+    reason: "blocked",
+    removed: "2026-08-06",
+  }
+  expect(GraveyardEntrySchema.parse(ok).reason).toBe("blocked")
+})
+
 test("accepts a graveyard entry with a valid owner/repo id", () => {
   const ok = {
     id: "obra/superpowers",

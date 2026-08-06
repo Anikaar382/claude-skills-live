@@ -24,6 +24,28 @@ test("rejects mirrors of leaked proprietary source", () => {
   expect(isEligible(meta("someone/system-prompts-leaks"), new Set())).toBe(false)
 })
 
+test("rejects an id with underscore separators", () => {
+  expect(isEligible(meta("someone/system_prompts_leaks"), new Set())).toBe(false)
+})
+
+test("rejects a keyword-only mirror id with no leak token", () => {
+  expect(isEligible(meta("someone/claude-code-system-prompts"), new Set())).toBe(false)
+})
+
+test("rejects an innocuous id whose description identifies leaked/extracted content", () => {
+  const m = meta("someone/prompt-vault", {
+    description: "A mirror of Claude's leaked internal system prompt, extracted verbatim.",
+  })
+  expect(isEligible(m, new Set())).toBe(false)
+})
+
+test("accepts a legitimate prompt-engineering tool that is not a mirror", () => {
+  const m = meta("someone/prompt-forge", {
+    description: "Write, test, and version system prompts for any LLM agent, with built-in evals.",
+  })
+  expect(isEligible(m, new Set())).toBe(true)
+})
+
 test("toEntry truncates a long description to 120 characters", () => {
   const e = toEntry(meta("a/b", { description: "x".repeat(400) }), "2026-08-06")
   expect(e.summary.length).toBeLessThanOrEqual(120)

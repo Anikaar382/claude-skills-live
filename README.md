@@ -2,7 +2,7 @@
 
 An automatically verified index of Claude Code and Agent Skills tooling.
 
-> ✅ **0 dead entries · 345 verified · last checked 2026-08-06 00:00 UTC**
+> ✅ **0 dead entries · 343 verified · last checked 2026-08-06 00:00 UTC**
 
 Every entry is re-checked daily. Anything archived, deleted, or untouched for 90 days is
 flagged and removed. See [`graveyard.yaml`](./graveyard.yaml) for what was pruned and why.
@@ -35,7 +35,6 @@ flagged and removed. See [`graveyard.yaml`](./graveyard.yaml) for what was prune
 | [headroomlabs-ai/headroom](https://github.com/headroomlabs-ai/headroom) | 65,225 | 2026-08-06 | Compress tool outputs, logs, files, and RAG chunks before they reach the LLM. 20% fewer tokens for coding agents, 60-95% |
 | [shanraisshan/claude-code-best-practice](https://github.com/shanraisshan/claude-code-best-practice) | 64,095 | 2026-08-03 | from vibe coding to agentic engineering - practice makes claude perfect |
 | [santifer/career-ops](https://github.com/santifer/career-ops) | 63,064 | 2026-08-05 | Open-source AI job search: scan job portals, evaluate listings with a structured A-F rubric into a 1.0-5.0 score, tailor |
-| [asgeirtj/system_prompts_leaks](https://github.com/asgeirtj/system_prompts_leaks) | 62,462 | 2026-08-06 | Extracted system prompts from Anthropic - Claude Fable 5, Opus 5, Claude Design, Claude Code. OpenAI - ChatGPT GPT-5.6-S |
 | [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill) | 57,484 | 2026-08-02 | AI agent skill that researches any topic across Reddit, X, YouTube, HN, Polymarket, and the web - then synthesizes a gro |
 | [hesreallyhim/awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code) | 51,797 | 2026-08-06 | A hand-picked collection of the finest of resources for the most awesome of agents, Claude Code, the undisputed champion |
 | [VoltAgent/awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills) | 51,770 | 2026-07-31 | The awesome collection of OpenClaw skills. 5,400+ skills filtered and categorized from the official OpenClaw Skills Regi |
@@ -113,7 +112,6 @@ flagged and removed. See [`graveyard.yaml`](./graveyard.yaml) for what was prune
 | [getpaseo/paseo](https://github.com/getpaseo/paseo) | 12,470 | 2026-08-06 | Orchestrate multiple coding agents from desktop and mobile |
 | [zilliztech/claude-context](https://github.com/zilliztech/claude-context) | 12,290 | 2026-07-14 | Code search MCP for Claude Code. Make entire codebase the context for any coding agent. |
 | [sirmalloc/ccstatusline](https://github.com/sirmalloc/ccstatusline) | 12,264 | 2026-08-03 | 🚀 Beautiful highly customizable statusline for Claude Code CLI with powerline support, themes, and more. |
-| [Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts) | 12,203 | 2026-08-06 | All parts of Claude Code's system prompt, 27 builtin tool descriptions, sub agent prompts (Plan/Explore/Task), utility p |
 | [Orchestra-Research/AI-Research-SKILLs](https://github.com/Orchestra-Research/AI-Research-SKILLs) | 11,470 | 2026-06-16 | Comprehensive open-source library of AI research and engineering skills for any AI model. Package the skills and your cl |
 | [humanlayer/humanlayer](https://github.com/humanlayer/humanlayer) | 11,201 | 2026-06-19 | The best way to get AI coding agents to solve hard problems in complex codebases. |
 | [nidhinjs/prompt-master](https://github.com/nidhinjs/prompt-master) | 11,050 | 2026-06-10 | A Claude skill that writes the accurate prompts for any AI tool. Zero tokens or credits wasted. Full context and memory |
