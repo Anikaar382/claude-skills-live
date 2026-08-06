@@ -1,0 +1,17 @@
+version: 1
+entries:
+  - id: Piebald-AI/claude-code-system-prompts
+    name: claude-code-system-prompts
+    url: https://github.com/Piebald-AI/claude-code-system-prompts
+    reason: blocked
+    removed: 2026-08-06
+  - id: asgeirtj/system_prompts_leaks
+    name: system_prompts_leaks
+    url: https://github.com/asgeirtj/system_prompts_leaks
+    reason: blocked
+    removed: 2026-08-06
+  - id: codeaashu/claude-code
+    name: claude-code
+    url: https://github.com/codeaashu/claude-code
+    reason: blocked
+    removed: 2026-08-07

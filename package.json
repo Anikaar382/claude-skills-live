@@ -1,0 +1,20 @@
+{
+  "name": "skills-live",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "discover": "bun run src/cli.ts discover",
+    "refresh": "bun run src/cli.ts refresh",
+    "render": "bun run src/cli.ts render",
+    "validate": "bun run src/cli.ts validate",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "yaml": "^2.6.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

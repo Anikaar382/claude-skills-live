@@ -1,0 +1,211 @@
+export interface RepoMeta {
+  id: string
+  stars: number
+  pushed_at: string
+  archived: boolean
+  description: string | null
+}
+
+export interface GitHubClient {
+  searchRepos(query: string, max: number): Promise<RepoMeta[]>
+  getRepos(ids: string[]): Promise<Map<string, RepoMeta | null>>
+}
+
+export function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
+  return out
+}
+
+export type ThrottleAction = "backoff" | "throw" | "proceed"
+
+export function throttleAction(
+  status: number,
+  headers: Headers,
+  attempts: number,
+): ThrottleAction {
+  if (status >= 200 && status < 300) return "proceed"
+
+  if (status === 429) {
+    return attempts < 5 ? "backoff" : "throw"
+  }
+
+  if (status === 403) {
+    const hasRateLimitHeaders =
+      headers.get("x-ratelimit-remaining") === "0" || headers.has("retry-after")
+
+    if (hasRateLimitHeaders) {
+      return attempts < 5 ? "backoff" : "throw"
+    } else {
+      return "throw"
+    }
+  }
+
+  return "throw"
+}
+
+export function buildBatchQuery(ids: string[]): string {
+  const parts = ids.map((id, i) => {
+    const [owner, name] = id.split("/")
+    return `  r${i}: repository(owner: "${owner}", name: "${name}") { ...M }`
+  })
+  return [
+    "query {",
+    ...parts,
+    "}",
+    "fragment M on Repository {",
+    "  nameWithOwner",
+    "  stargazerCount",
+    "  pushedAt",
+    "  isArchived",
+    "  description",
+    "}",
+  ].join("\n")
+}
+
+export interface GraphQLError {
+  type?: string
+  message?: string
+}
+
+export interface GraphQLBody {
+  data?: unknown
+  errors?: GraphQLError[]
+}
+
+function describeErrors(errors: GraphQLError[]): string {
+  return errors
+    .map((e) => `${e.type ?? "UNKNOWN"}: ${e.message ?? "(no message)"}`)
+    .join("; ")
+}
+
+// GitHub's GraphQL API answers rate limits, query timeouts and permission
+// failures with HTTP 200 and {"data": null, "errors": [{"type": "RATE_LIMITED"}]}.
+// Reading only res.ok therefore turns a throttled minute into "every repo in
+// the index was deleted". A NOT_FOUND error is the one benign case: it is how
+// the API reports a single dead repo inside an otherwise good batch, and the
+// corresponding alias is simply null.
+//
+// Returns a diagnostic message when the body must not be trusted, else null.
+export function graphqlFailure(body: GraphQLBody): string | null {
+  const errors = body.errors ?? []
+  const fatal = errors.filter((e) => e.type !== "NOT_FOUND")
+  if (fatal.length > 0) {
+    return `graphql returned ${fatal.length} error(s): ${describeErrors(fatal)}`
+  }
+  if (body.data === null || body.data === undefined) {
+    const suffix = errors.length > 0 ? ` (errors: ${describeErrors(errors)})` : ""
+    return `graphql returned no data${suffix}`
+  }
+  return null
+}
+
+function toMeta(node: {
+  nameWithOwner: string
+  stargazerCount: number
+  pushedAt: string
+  isArchived: boolean
+  description: string | null
+}): RepoMeta {
+  return {
+    id: node.nameWithOwner,
+    stars: node.stargazerCount,
+    pushed_at: node.pushedAt.slice(0, 10),
+    archived: node.isArchived,
+    description: node.description,
+  }
+}
+
+export class RealGitHubClient implements GitHubClient {
+  constructor(private token: string) {}
+
+  private headers(): Record<string, string> {
+    return {
+      Authorization: `Bearer ${this.token}`,
+      Accept: "application/vnd.github+json",
+      "User-Agent": "skills-live",
+    }
+  }
+
+  async searchRepos(query: string, max: number): Promise<RepoMeta[]> {
+    const out: RepoMeta[] = []
+    pageLoop: for (let page = 1; out.length < max && page <= 10; page++) {
+      let attempts = 0
+      while (true) {
+        const url =
+          `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}` +
+          `&sort=stars&order=desc&per_page=100&page=${page}`
+        const res = await fetch(url, { headers: this.headers() })
+        attempts++
+
+        const action = throttleAction(res.status, res.headers, attempts)
+
+        if (action === "backoff") {
+          await Bun.sleep(2000 * page)
+          continue
+        }
+
+        if (action === "throw") {
+          throw new Error(`search failed: ${res.status} ${await res.text()}`)
+        }
+
+        // action === "proceed"
+        const body = (await res.json()) as { items?: Array<Record<string, unknown>> }
+        const items = body.items ?? []
+        if (items.length === 0) break pageLoop
+        for (const it of items) {
+          out.push({
+            id: String(it.full_name),
+            stars: Number(it.stargazers_count),
+            pushed_at: String(it.pushed_at).slice(0, 10),
+            archived: Boolean(it.archived),
+            description: (it.description as string | null) ?? null,
+          })
+        }
+        break
+      }
+    }
+    return out.slice(0, max)
+  }
+
+  async getRepos(ids: string[]): Promise<Map<string, RepoMeta | null>> {
+    const out = new Map<string, RepoMeta | null>()
+    for (const group of chunk(ids, 100)) {
+      const res = await fetch("https://api.github.com/graphql", {
+        method: "POST",
+        headers: { ...this.headers(), "Content-Type": "application/json" },
+        body: JSON.stringify({ query: buildBatchQuery(group) }),
+      })
+      if (!res.ok) throw new Error(`graphql failed: ${res.status} ${await res.text()}`)
+      const body = (await res.json()) as GraphQLBody
+      const failure = graphqlFailure(body)
+      if (failure !== null) throw new Error(`graphql failed: ${res.status} ${failure}`)
+      const data = body.data as Record<string, unknown>
+      group.forEach((id, i) => {
+        const node = data[`r${i}`]
+        out.set(id, node ? toMeta(node as Parameters<typeof toMeta>[0]) : null)
+      })
+    }
+    return out
+  }
+}
+
+export class FakeGitHubClient implements GitHubClient {
+  constructor(
+    private repos: RepoMeta[],
+    private gone: Set<string> = new Set(),
+  ) {}
+
+  async searchRepos(_query: string, max: number): Promise<RepoMeta[]> {
+    return this.repos.slice(0, max)
+  }
+
+  async getRepos(ids: string[]): Promise<Map<string, RepoMeta | null>> {
+    const out = new Map<string, RepoMeta | null>()
+    for (const id of ids) {
+      if (this.gone.has(id)) out.set(id, null)
+      else out.set(id, this.repos.find((r) => r.id === id) ?? null)
+    }
+    return out
+  }
+}

@@ -1,0 +1,114 @@
+import { test, expect } from "bun:test"
+import {
+  FakeGitHubClient,
+  buildBatchQuery,
+  chunk,
+  graphqlFailure,
+  throttleAction,
+  type RepoMeta,
+} from "../src/github"
+
+function meta(id: string, stars = 100): RepoMeta {
+  return { id, stars, pushed_at: "2026-08-01", archived: false, description: "d" }
+}
+
+test("chunk splits into fixed-size groups", () => {
+  expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
+})
+
+test("chunk returns empty array for empty input", () => {
+  expect(chunk([], 100)).toEqual([])
+})
+
+test("buildBatchQuery emits one alias per id with owner and name split", () => {
+  const q = buildBatchQuery(["a/b", "c/d"])
+  expect(q).toContain('r0: repository(owner: "a", name: "b")')
+  expect(q).toContain('r1: repository(owner: "c", name: "d")')
+  expect(q).toContain("fragment M on Repository")
+})
+
+test("fake getRepos returns metadata for known ids", async () => {
+  const gh = new FakeGitHubClient([meta("a/b", 42)])
+  const got = await gh.getRepos(["a/b"])
+  expect(got.get("a/b")?.stars).toBe(42)
+})
+
+test("fake getRepos returns null for gone ids", async () => {
+  const gh = new FakeGitHubClient([meta("a/b")], new Set(["x/y"]))
+  const got = await gh.getRepos(["a/b", "x/y"])
+  expect(got.get("x/y")).toBeNull()
+})
+
+test("fake searchRepos respects the max argument", async () => {
+  const gh = new FakeGitHubClient([meta("a/b"), meta("c/d"), meta("e/f")])
+  expect((await gh.searchRepos("anything", 2)).length).toBe(2)
+})
+
+test("throttleAction: 429 under the cap backs off", () => {
+  const headers = new Headers()
+  expect(throttleAction(429, headers, 3)).toBe("backoff")
+})
+
+test("throttleAction: 429 at the cap throws", () => {
+  const headers = new Headers()
+  expect(throttleAction(429, headers, 5)).toBe("throw")
+})
+
+test("throttleAction: 403 with x-ratelimit-remaining zero backs off", () => {
+  const headers = new Headers({ "x-ratelimit-remaining": "0" })
+  expect(throttleAction(403, headers, 2)).toBe("backoff")
+})
+
+test("throttleAction: 403 without rate-limit headers throws immediately", () => {
+  const headers = new Headers()
+  expect(throttleAction(403, headers, 1)).toBe("throw")
+})
+
+test("throttleAction: 200 proceeds", () => {
+  const headers = new Headers()
+  expect(throttleAction(200, headers, 5)).toBe("proceed")
+})
+
+test("graphqlFailure accepts a healthy body", () => {
+  expect(graphqlFailure({ data: { r0: { nameWithOwner: "a/b" } } })).toBeNull()
+})
+
+test("graphqlFailure accepts a body whose only errors are NOT_FOUND", () => {
+  const body = {
+    data: { r0: null, r1: { nameWithOwner: "c/d" } },
+    errors: [{ type: "NOT_FOUND", message: "Could not resolve to a Repository" }],
+  }
+  expect(graphqlFailure(body)).toBeNull()
+})
+
+test("graphqlFailure rejects RATE_LIMITED even though the transport said 200", () => {
+  const msg = graphqlFailure({
+    data: null,
+    errors: [{ type: "RATE_LIMITED", message: "API rate limit exceeded" }],
+  })
+  expect(msg).toContain("RATE_LIMITED")
+  expect(msg).toContain("API rate limit exceeded")
+})
+
+test("graphqlFailure rejects a mixed batch containing one non-NOT_FOUND error", () => {
+  const msg = graphqlFailure({
+    data: { r0: null },
+    errors: [
+      { type: "NOT_FOUND", message: "gone" },
+      { type: "FORBIDDEN", message: "insufficient scope" },
+    ],
+  })
+  expect(msg).toContain("FORBIDDEN")
+  expect(msg).not.toContain("NOT_FOUND")
+})
+
+test("graphqlFailure rejects nullish data even with no errors array", () => {
+  expect(graphqlFailure({})).toContain("no data")
+  expect(graphqlFailure({ data: null })).toContain("no data")
+})
+
+test("graphqlFailure names an untyped error rather than dropping it", () => {
+  const msg = graphqlFailure({ data: null, errors: [{ message: "something broke" }] })
+  expect(msg).toContain("UNKNOWN")
+  expect(msg).toContain("something broke")
+})
