@@ -1,8 +1,11 @@
-import { writeFileSync } from "node:fs"
+import { readFileSync, writeFileSync } from "node:fs"
 import { discover } from "./discover"
 import { RealGitHubClient } from "./github"
+import { reap } from "./reap"
+import { refresh } from "./refresh"
 import { renderJson, renderReadme } from "./render"
 import { loadGraveyard, loadSkills, saveSkills } from "./store"
+import { validate } from "./validate"
 
 const SKILLS = "skills.yaml"
 const GRAVEYARD = "graveyard.yaml"
@@ -39,6 +42,30 @@ export async function main(argv: string[]): Promise<number> {
     saveSkills(SKILLS, data)
     writeArtifacts()
     console.log(`discovered ${found.length} new entries`)
+    return 0
+  }
+  if (cmd === "refresh") {
+    const now = new Date()
+    const data = loadSkills(SKILLS)
+    const gh = new RealGitHubClient(token())
+    const refreshed = await refresh(gh, data.entries, now)
+    const reaped = reap(refreshed.entries, refreshed.missing, now)
+    saveSkills(SKILLS, { version: 1, entries: reaped.entries })
+    writeArtifacts()
+    for (const f of reaped.flagged) console.log(`flagged ${f.id}: ${f.reason}`)
+    console.log(`refreshed ${refreshed.entries.length}, flagged ${reaped.flagged.length}`)
+    return 0
+  }
+  if (cmd === "validate") {
+    const problems = validate(
+      loadSkills(SKILLS),
+      readFileSync("README.md", "utf8"),
+      readFileSync("data/skills.json", "utf8"),
+      new Date(),
+    )
+    for (const p of problems) console.error(`FAIL ${p}`)
+    if (problems.length > 0) return 1
+    console.log("validate: ok")
     return 0
   }
   if (cmd === "render") {
