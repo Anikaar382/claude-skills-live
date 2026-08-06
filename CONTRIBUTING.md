@@ -14,6 +14,13 @@ Inclusion bar:
 - Not an undiverged fork
 - Not a mirror of leaked or proprietary source
 
+## Licensing what you contribute
+
+Data contributions are dedicated under CC0 (see `LICENSE-DATA`), but that
+dedication covers the compilation, the schema and the derived factual data
+about each entry; the `summary` field may quote a repository's own upstream
+description, which remains its author's.
+
 ## Removing an entry
 
 Open a PR moving the entry to `graveyard.yaml` with a reason and date. The bot
@@ -27,11 +34,15 @@ does this automatically for anything archived, deleted, or untouched for 90 days
   the repo's post-push setup notes) — until that secret exists, refresh PRs
   open but do not merge themselves.
 - `discover` runs daily at 06:00 UTC and opens an additions PR for human review.
-- `validate` runs on every PR (schema and README/JSON reproducibility only —
-  a discover PR is meant to sit open for multi-day review, so it is not
-  failed by its own age) and on every push to `main` (schema, reproducibility,
-  and the 48-hour staleness gate on `last_checked`, which is a signal about
-  whether the scheduled refresh is still alive, not about any one PR).
+- `validate` runs on every PR (schema, README/JSON reproducibility, and the
+  no-dead-entries gate — but not the age gate, since a discover PR is meant
+  to sit open for multi-day review and must not be failed by its own age)
+  and again on its own daily schedule at 05:30 UTC, where it additionally
+  runs the 48-hour staleness gate on `last_checked`. That gate is a signal
+  about whether the scheduled refresh is still alive rather than about any
+  one PR, so its trigger has to be a clock: if it only ran when `main` was
+  pushed, a dead scheduler would produce no PR, no merge, no push, and
+  therefore no run of the check meant to detect it.
 
 If the badge at the top of the README goes red, the automation has stopped and
 the freshness claim no longer holds. That is intentional — silence must not read

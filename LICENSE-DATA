@@ -1,3 +1,32 @@
+SCOPE OF THIS DEDICATION
+========================
+
+The CC0 1.0 Universal dedication below is made by the maintainers of
+skills-live over the parts of this repository's data that are theirs to give:
+
+  - the compilation itself: which repositories are listed, how they are
+    grouped and ordered, and the selection judgement that produced the set;
+  - the schema in `skills.yaml` and `data/skills.json`, and the field names,
+    vocabularies and structure it defines;
+  - the derived factual data recorded about each entry: repository name and
+    id, URL, kind, tags, star count, last-push date, archived state, and the
+    dates on which this project added, checked or flagged it.
+
+It does NOT purport to cover the `summary` field. A summary is frequently the
+repository's own upstream GitHub description, reproduced verbatim or truncated
+to fit the field's 120-character limit. That text was authored by the
+repository's owner, not by this project, and their rights in it are unaffected
+by anything in this file. It is reproduced here as a short factual quotation
+identifying the repository, in the same way a search result or a package index
+quotes a project's own one-line description.
+
+If you are the author of a repository listed here and you want its summary
+reworded or removed, open an issue and it will be changed.
+
+Nothing above narrows the dedication over the parts it does cover.
+
+--------------------------------------------------------------------------
+
 Creative Commons Legal Code
 
 CC0 1.0 Universal
