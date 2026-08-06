@@ -181,3 +181,59 @@ test("the header describes flagging as delisting, not removal", () => {
   expect(md).toContain("permanently excluded")
   expect(md).not.toContain("what was pruned and why")
 })
+
+test("a summary cannot smuggle a live link into the page", () => {
+  const data: SkillsFile = {
+    version: 1,
+    entries: [entry("a/evil", 1, { summary: "[click me](http://evil.example.com)" })],
+  }
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("\\[click me\\](http://evil.example.com)")
+  expect(md).not.toContain("[click me](http://evil.example.com)")
+})
+
+test("a summary cannot smuggle a remote image into the page", () => {
+  const data: SkillsFile = {
+    version: 1,
+    entries: [entry("a/evil", 1, { summary: "![](http://tracker.example.com/x.png)" })],
+  }
+  const md = renderReadme(data, NOW)
+  expect(md).not.toContain("![](http://tracker.example.com/x.png)")
+  expect(md).toContain("!\\[\\](http://tracker.example.com/x.png)")
+})
+
+test("a summary cannot smuggle raw HTML into the page", () => {
+  const data: SkillsFile = {
+    version: 1,
+    entries: [entry("a/evil", 1, { summary: "<img src=x onerror=alert(1)>" })],
+  }
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("\\<img src=x onerror=alert(1)\\>")
+  // No unescaped angle bracket anywhere: GFM passes raw HTML straight through.
+  expect(md).not.toMatch(/(^|[^\\])<img/)
+})
+
+test("a summary cannot open a code span that swallows the rest of the row", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/tick", 1, { summary: "use `npm i" })] }
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("use \\`npm i")
+})
+
+test("a backslash in a summary is escaped so escaping stays injective", () => {
+  const data: SkillsFile = {
+    version: 1,
+    entries: [entry("a/bs", 1, { summary: "path\\to\\thing" })],
+  }
+  // "path\to\thing" -> the \t is a literal backslash-t in this source string.
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("path\\\\to\\\\thing")
+})
+
+test("pipe escaping still holds alongside the new escapes", () => {
+  const data: SkillsFile = {
+    version: 1,
+    entries: [entry("a/mix", 1, { summary: "CLI | [API] <tool>" })],
+  }
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("CLI \\| \\[API\\] \\<tool\\>")
+})

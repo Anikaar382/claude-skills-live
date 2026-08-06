@@ -29,7 +29,7 @@ separate: it holds entries permanently excluded from the index and never reconsi
 | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | 89,868 | 2026-08-05 | Persistent Context Across Sessions for Every Agent – Captures everything your agent does during sessions, compresses it |
 | [nexu-io/open-design](https://github.com/nexu-io/open-design) | 84,184 | 2026-08-06 | 🎨 The open-source Claude Design alternative. 🖥️ Local-first desktop app. 🖼️ Your coding agent becomes the design engi |
 | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) | 82,860 | 2026-08-06 | Production-grade engineering skills for AI coding agents. |
-| [Egonex-AI/Understand-Anything](https://github.com/Egonex-AI/Understand-Anything) | 77,771 | 2026-07-30 | Graphs that teach > graphs that impress. Turn any code into an interactive knowledge graph you can explore, search, and |
+| [Egonex-AI/Understand-Anything](https://github.com/Egonex-AI/Understand-Anything) | 77,771 | 2026-07-30 | Graphs that teach \> graphs that impress. Turn any code into an interactive knowledge graph you can explore, search, and |
 | [rtk-ai/rtk](https://github.com/rtk-ai/rtk) | 75,050 | 2026-08-06 | CLI proxy that reduces LLM token consumption by 60-90% on common dev commands. Single Rust binary, zero dependencies |
 | [shareAI-lab/learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) | 73,426 | 2026-07-28 | Bash is all you need - A nano claude code–like 「agent harness」, built from 0 to 1 |
 | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) | 73,160 | 2026-07-23 | Taste-Skill - gives your AI good taste. stops the AI from generating boring, generic slop |

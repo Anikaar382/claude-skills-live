@@ -37,13 +37,27 @@ function badgeTime(active: Entry[], now: Date): string {
   return `${stamp.slice(0, 10)} ${stamp.slice(11, 16)} UTC`
 }
 
+// `summary` is up to 120 characters of text authored by whoever owns the
+// repository — anyone can create a 25-star repo with any description they
+// like — and it is rendered into a page this project publishes. Escaping only
+// `|` left `[x](http://evil)` rendering as a live link and
+// `![](http://tracker/x.png)` as a remote image fetched by every reader, which
+// makes the page a tracking beacon and a redirect surface on someone else's
+// behalf. `<` and `>` are escaped because GitHub-flavoured Markdown passes
+// raw HTML through, and a backtick would otherwise let a summary open a code
+// span that swallows the rest of the row.
+//
+// Backslash is escaped first, in the same single pass, so the escape is
+// injective: without it a summary containing `\` could combine with an
+// inserted backslash to re-form the construct being escaped.
+const CELL_ESCAPE = /[\\`|[\]<>]/g
+
 function escapeMarkdownCell(text: string): string {
-  // Escape pipe characters and collapse whitespace
   return text
-    .replace(/\|/g, "\\|")
     .replace(/[\r\n\t]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
+    .replace(CELL_ESCAPE, (c) => `\\${c}`)
 }
 
 function row(e: Entry): string {
