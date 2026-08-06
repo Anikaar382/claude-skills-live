@@ -88,7 +88,11 @@ export async function main(argv: string[]): Promise<number> {
     saveSkills(SKILLS, nextData)
     writeArtifacts(nextData, now)
     for (const f of reaped.flagged) console.log(`flagged ${f.id}: ${f.reason}`)
-    console.log(`refreshed ${refreshed.entries.length}, flagged ${reaped.flagged.length}`)
+    for (const id of reaped.revived) console.log(`revived ${id}: back to active`)
+    console.log(
+      `refreshed ${refreshed.entries.length}, flagged ${reaped.flagged.length}, ` +
+        `revived ${reaped.revived.length}`,
+    )
     return 0
   }
   if (cmd === "validate") {

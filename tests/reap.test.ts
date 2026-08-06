@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test"
 import { daysBetween, reap, toGraveyard } from "../src/reap"
-import type { Entry } from "../src/schema"
+import { EntrySchema, type Entry } from "../src/schema"
 
 function entry(id: string, pushed: string, over: Partial<Entry> = {}): Entry {
   return {
@@ -159,4 +159,101 @@ test("toGraveyard captures id, reason and removal date", () => {
     reason: "stale",
     removed: "2026-08-06",
   })
+})
+
+test("daysBetween treats an unparseable date as maximally stale", () => {
+  // The DATE regex is shape-only, so this passes schema validation.
+  expect(daysBetween("2026-13-45", NOW)).toBe(Number.POSITIVE_INFINITY)
+})
+
+test("an entry with a malformed pushed_at is flagged stale, not made immortal", () => {
+  const e = entry("a/b", "2026-13-45")
+  expect(reap([e], [], NOW).flagged).toEqual([{ id: "a/b", reason: "stale" }])
+})
+
+test("a stale-flagged entry that pushed again is revived to active", () => {
+  const e = entry("a/b", "2026-08-05", {
+    status: "flagged",
+    flag: { reason: "stale", since: "2026-06-01", issue: 4, grace_until: null },
+  })
+  const { entries, flagged, revived } = reap([e], [], NOW)
+  expect(flagged).toEqual([])
+  expect(revived).toEqual(["a/b"])
+  expect(entries[0]!.status).toBe("active")
+  expect(entries[0]!.flag).toBeUndefined()
+})
+
+test("an archived-flagged entry that was unarchived is revived to active", () => {
+  const e = entry("a/b", "2026-08-05", {
+    status: "flagged",
+    flag: { reason: "archived", since: "2026-06-01", issue: null, grace_until: null },
+    metrics: { stars: 10, pushed_at: "2026-08-05", archived: false, last_checked: "2026-08-06T04:00:00Z" },
+  })
+  const { entries, revived } = reap([e], [], NOW)
+  expect(revived).toEqual(["a/b"])
+  expect(entries[0]!.status).toBe("active")
+  expect(entries[0]!.flag).toBeUndefined()
+})
+
+test("a gone-flagged entry that reappears in the API is revived to active", () => {
+  const e = entry("a/b", "2026-08-05", {
+    status: "flagged",
+    flag: { reason: "gone", since: "2026-06-01", issue: null, grace_until: null },
+  })
+  const { entries, revived } = reap([e], [], NOW)
+  expect(revived).toEqual(["a/b"])
+  expect(entries[0]!.status).toBe("active")
+  expect(entries[0]!.flag).toBeUndefined()
+})
+
+test("a blocked entry is never revived even when the repo looks healthy", () => {
+  const e = entry("a/b", "2026-08-05", {
+    status: "flagged",
+    flag: { reason: "blocked", since: "2026-06-01", issue: 3, grace_until: null },
+  })
+  const { entries, revived, flagged } = reap([e], [], NOW)
+  expect(revived).toEqual([])
+  expect(flagged).toEqual([])
+  expect(entries[0]).toEqual(e)
+})
+
+test("a disputed entry is never revived even when the repo looks healthy", () => {
+  const e = entry("a/b", "2026-08-05", {
+    status: "flagged",
+    flag: { reason: "dispute", since: "2026-06-01", issue: 9, grace_until: null },
+  })
+  const { entries, revived, flagged } = reap([e], [], NOW)
+  expect(revived).toEqual([])
+  expect(flagged).toEqual([])
+  expect(entries[0]).toEqual(e)
+})
+
+test("an already-active healthy entry is untouched and not reported as revived", () => {
+  const e = entry("a/b", "2026-08-05")
+  const { entries, revived, flagged } = reap([e], [], NOW)
+  expect(revived).toEqual([])
+  expect(flagged).toEqual([])
+  expect(entries[0]).toEqual(e)
+})
+
+test("grace suppresses flagging without triggering a revival", () => {
+  // Still stale, just inside its grace window: it must stay flagged and keep
+  // its grace_until, or checkNoDead would see an active, stale, ungraced entry.
+  const e = entry("a/b", "2026-01-01", {
+    status: "flagged",
+    flag: { reason: "stale", since: "2026-06-01", issue: 2, grace_until: "2027-01-01" },
+  })
+  const { entries, revived, flagged } = reap([e], [], NOW)
+  expect(revived).toEqual([])
+  expect(flagged).toEqual([])
+  expect(entries[0]).toEqual(e)
+})
+
+test("a revived entry survives a schema round-trip without a flag", () => {
+  const e = entry("a/b", "2026-08-05", {
+    status: "flagged",
+    flag: { reason: "stale", since: "2026-06-01", issue: null, grace_until: null },
+  })
+  const { entries } = reap([e], [], NOW)
+  expect(() => EntrySchema.parse(entries[0])).not.toThrow()
 })
