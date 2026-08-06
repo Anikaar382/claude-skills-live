@@ -7,7 +7,10 @@ An automatically verified index of Claude Code and Agent Skills tooling.
 > ✅ **0 dead entries · 311 verified · last checked 2026-08-06 22:34 UTC**
 
 Every entry is re-checked daily. Anything archived, deleted, or untouched for 90 days is
-flagged and removed. See [`graveyard.yaml`](./graveyard.yaml) for what was pruned and why.
+flagged and delisted from the tables below, with the reason and the date it happened
+recorded under "Recently flagged" for as long as it stays flagged. An entry returns to
+the tables by itself once the condition clears. [`graveyard.yaml`](./graveyard.yaml) is
+separate: it holds entries permanently excluded from the index and never reconsidered.
 
 `README.md` is generated from [`skills.yaml`](./skills.yaml). Do not edit it directly.
 
@@ -326,6 +329,44 @@ flagged and removed. See [`graveyard.yaml`](./graveyard.yaml) for what was prune
 | [RobThePCGuy/Claude-Patent-Creator](https://github.com/RobThePCGuy/Claude-Patent-Creator) | 167 | 2026-08-02 | USPTO patent creation system with MCP server + Claude Code plugin. Hybrid RAG search over MPEP/USC/CFR, BigQuery acces |
 | [prime-radiant-inc/iterative-development](https://github.com/prime-radiant-inc/iterative-development) | 161 | 2026-06-06 | Iterative development methodology plugin for Claude Code — extracts requirements, defines walking skeleton, loops throug |
 | [romiluz13/cc10x](https://github.com/romiluz13/cc10x) | 161 | 2026-08-03 | The Loop Engine for Claude Code — engineer the loop, not the prompt. 1 router · 9 agents · 16 skills · 4 workflows. Fail |
+
+## Recently flagged
+
+Delisted from the tables above. These come back automatically if the repo does.
+
+| Repo | Reason | Flagged since |
+|---|---|---|
+| [24kchengYe/human-skill-tree](https://github.com/24kchengYe/human-skill-tree) | stale | 2026-08-06 |
+| [BayramAnnakov/claude-reflect](https://github.com/BayramAnnakov/claude-reflect) | stale | 2026-08-06 |
+| [Ibrahim-3d/orchestrator-supaconductor](https://github.com/Ibrahim-3d/orchestrator-supaconductor) | stale | 2026-08-06 |
+| [RKiding/Awesome-finance-skills](https://github.com/RKiding/Awesome-finance-skills) | stale | 2026-08-06 |
+| [Shanyin-ai/shanyin-screenwriting-master](https://github.com/Shanyin-ai/shanyin-screenwriting-master) | stale | 2026-08-06 |
+| [SnailSploit/Claude-Red](https://github.com/SnailSploit/Claude-Red) | stale | 2026-08-06 |
+| [agenticnotetaking/arscontexta](https://github.com/agenticnotetaking/arscontexta) | stale | 2026-08-06 |
+| [alirezarezvani/claude-code-skill-factory](https://github.com/alirezarezvani/claude-code-skill-factory) | stale | 2026-08-06 |
+| [bevibing/tutor-skills](https://github.com/bevibing/tutor-skills) | stale | 2026-08-06 |
+| [ccplugins/awesome-claude-code-plugins](https://github.com/ccplugins/awesome-claude-code-plugins) | stale | 2026-08-06 |
+| [conorluddy/xclaude-plugin](https://github.com/conorluddy/xclaude-plugin) | stale | 2026-08-06 |
+| [davegoldblatt/total-recall](https://github.com/davegoldblatt/total-recall) | stale | 2026-08-06 |
+| [heilcheng/awesome-agent-skills](https://github.com/heilcheng/awesome-agent-skills) | stale | 2026-08-06 |
+| [hesamsheikh/octogent](https://github.com/hesamsheikh/octogent) | stale | 2026-08-06 |
+| [kazukinagata/shinkoku](https://github.com/kazukinagata/shinkoku) | stale | 2026-08-06 |
+| [keskinonur/claude-code-ios-dev-guide](https://github.com/keskinonur/claude-code-ios-dev-guide) | stale | 2026-08-06 |
+| [lackeyjb/playwright-skill](https://github.com/lackeyjb/playwright-skill) | stale | 2026-08-06 |
+| [memvid/claude-brain](https://github.com/memvid/claude-brain) | stale | 2026-08-06 |
+| [minsight-ai-info/AI-Search-Hub](https://github.com/minsight-ai-info/AI-Search-Hub) | stale | 2026-08-06 |
+| [muxuuu/serenity-skill](https://github.com/muxuuu/serenity-skill) | stale | 2026-08-06 |
+| [parcadei/Continuous-Claude-v3](https://github.com/parcadei/Continuous-Claude-v3) | stale | 2026-08-06 |
+| [quant-sentiment-ai/claude-equity-research](https://github.com/quant-sentiment-ai/claude-equity-research) | stale | 2026-08-06 |
+| [rohitg00/awesome-claude-design](https://github.com/rohitg00/awesome-claude-design) | stale | 2026-08-06 |
+| [seulee26/mckinsey-pptx](https://github.com/seulee26/mckinsey-pptx) | stale | 2026-08-06 |
+| [softaworks/agent-toolkit](https://github.com/softaworks/agent-toolkit) | stale | 2026-08-06 |
+| [travisvn/awesome-claude-skills](https://github.com/travisvn/awesome-claude-skills) | stale | 2026-08-06 |
+| [vladikk/modularity](https://github.com/vladikk/modularity) | stale | 2026-08-06 |
+| [winfunc/opcode](https://github.com/winfunc/opcode) | stale | 2026-08-06 |
+| [yeap531/word-format-skill](https://github.com/yeap531/word-format-skill) | stale | 2026-08-06 |
+| [zanwei/design-dna](https://github.com/zanwei/design-dna) | stale | 2026-08-06 |
+| [zscole/adversarial-spec](https://github.com/zscole/adversarial-spec) | stale | 2026-08-06 |
 
 ---
 

@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test"
 import { renderJson, renderReadme } from "../src/render"
-import type { Entry, SkillsFile } from "../src/schema"
+import type { Entry, FlagReason, SkillsFile } from "../src/schema"
 
 function entry(id: string, stars: number, over: Partial<Entry> = {}): Entry {
   const [, name] = id.split("/")
@@ -35,14 +35,16 @@ test("entries are ordered by stars descending within a kind", () => {
   expect(md.indexOf("b/high")).toBeLessThan(md.indexOf("a/low"))
 })
 
-test("flagged entries are excluded from the README", () => {
+test("flagged entries are excluded from the kind tables and not counted as verified", () => {
   const flagged = entry("x/gone", 999, {
     status: "flagged",
     flag: { reason: "stale", since: "2026-08-06", issue: 1, grace_until: null },
   })
   const md = renderReadme({ version: 1, entries: [entry("a/a", 1), flagged] }, NOW)
-  expect(md).not.toContain("x/gone")
   expect(md).toContain("1 verified")
+  // Present only below the "Recently flagged" heading, never in a kind table.
+  const above = md.slice(0, md.indexOf("## Recently flagged"))
+  expect(above).not.toContain("x/gone")
 })
 
 test("kind headings appear only when that kind has entries", () => {
@@ -118,4 +120,64 @@ test("the header carries the static validate workflow badge", () => {
 test("the badge sits in the header, above the first kind section", () => {
   const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
   expect(md.indexOf("badge.svg")).toBeLessThan(md.indexOf("## "))
+})
+
+function flaggedEntry(id: string, reason: FlagReason, since: string): Entry {
+  return entry(id, 1, {
+    status: "flagged",
+    flag: { reason, since, issue: null, grace_until: null },
+  })
+}
+
+test("the Recently flagged section lists id, reason and since", () => {
+  const data: SkillsFile = {
+    version: 1,
+    entries: [entry("a/a", 1), flaggedEntry("x/dead", "gone", "2026-08-04")],
+  }
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("## Recently flagged")
+  expect(md).toContain("| [x/dead](https://github.com/x/dead) | gone | 2026-08-04 |")
+})
+
+test("the Recently flagged section is omitted entirely when nothing is flagged", () => {
+  const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
+  expect(md).not.toContain("## Recently flagged")
+  expect(md).not.toContain("| Repo | Reason | Flagged since |")
+})
+
+test("the Recently flagged section sits after the kind sections", () => {
+  const data: SkillsFile = {
+    version: 1,
+    entries: [entry("a/a", 1, { kind: "tool" }), flaggedEntry("x/dead", "gone", "2026-08-04")],
+  }
+  const md = renderReadme(data, NOW)
+  expect(md.indexOf("## Tools")).toBeLessThan(md.indexOf("## Recently flagged"))
+  expect(md.indexOf("## Recently flagged")).toBeLessThan(md.indexOf("Code MIT"))
+})
+
+test("flagged rows sort by since descending then id, regardless of input order", () => {
+  const older = flaggedEntry("a/older", "stale", "2026-07-01")
+  const newerA = flaggedEntry("b/newer", "archived", "2026-08-01")
+  const newerB = flaggedEntry("a/newer", "gone", "2026-08-01")
+  const forward = renderReadme({ version: 1, entries: [older, newerA, newerB] }, NOW)
+  const reversed = renderReadme({ version: 1, entries: [newerB, newerA, older] }, NOW)
+  expect(forward).toBe(reversed)
+  expect(forward.indexOf("a/newer")).toBeLessThan(forward.indexOf("b/newer"))
+  expect(forward.indexOf("b/newer")).toBeLessThan(forward.indexOf("a/older"))
+})
+
+test("human flag reasons are shown in Recently flagged too", () => {
+  const md = renderReadme(
+    { version: 1, entries: [flaggedEntry("x/d", "dispute", "2026-08-02")] },
+    NOW,
+  )
+  expect(md).toContain("| [x/d](https://github.com/x/d) | dispute | 2026-08-02 |")
+})
+
+test("the header describes flagging as delisting, not removal", () => {
+  const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
+  expect(md).toContain("flagged and delisted")
+  expect(md).not.toContain("flagged and removed")
+  expect(md).toContain("permanently excluded")
+  expect(md).not.toContain("what was pruned and why")
 })

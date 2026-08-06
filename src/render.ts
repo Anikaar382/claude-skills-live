@@ -1,4 +1,6 @@
-import type { Entry, Kind, SkillsFile } from "./schema"
+import type { Entry, Flag, Kind, SkillsFile } from "./schema"
+
+type FlaggedEntry = Entry & { flag: Flag }
 
 export const KIND_ORDER = ["framework", "skill", "plugin", "mcp", "tool"] as const
 
@@ -12,6 +14,18 @@ export const KIND_HEADING: Record<Kind, string> = {
 
 function activeOf(data: SkillsFile): Entry[] {
   return data.entries.filter((e) => e.status === "active")
+}
+
+// Most recently flagged first, ties broken by id, so the output is a total
+// order and therefore byte-stable under the reproducibility gate.
+function flaggedOf(data: SkillsFile): FlaggedEntry[] {
+  return data.entries
+    .filter((e): e is FlaggedEntry => e.status === "flagged" && e.flag !== undefined)
+    .sort(
+      (a, b) =>
+        (a.flag.since < b.flag.since ? 1 : a.flag.since > b.flag.since ? -1 : 0) ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    )
 }
 
 function badgeTime(active: Entry[], now: Date): string {
@@ -54,7 +68,10 @@ export function renderReadme(data: SkillsFile, now: Date): string {
     `> ✅ **0 dead entries · ${active.length} verified · last checked ${badgeTime(active, now)}**`,
     "",
     "Every entry is re-checked daily. Anything archived, deleted, or untouched for 90 days is",
-    "flagged and removed. See [`graveyard.yaml`](./graveyard.yaml) for what was pruned and why.",
+    "flagged and delisted from the tables below, with the reason and the date it happened",
+    "recorded under \"Recently flagged\" for as long as it stays flagged. An entry returns to",
+    "the tables by itself once the condition clears. [`graveyard.yaml`](./graveyard.yaml) is",
+    "separate: it holds entries permanently excluded from the index and never reconsidered.",
     "",
     "`README.md` is generated from [`skills.yaml`](./skills.yaml). Do not edit it directly.",
     "",
@@ -67,6 +84,27 @@ export function renderReadme(data: SkillsFile, now: Date): string {
     if (group.length === 0) continue
     lines.push(`## ${KIND_HEADING[kind]}`, "", "| Repo | Stars | Last push | What |", "|---|---|---|---|")
     for (const e of group) lines.push(row(e))
+    lines.push("")
+  }
+
+  // Reaping is the product, so it needs public evidence. Without this section
+  // a flagged entry simply disappears from the page with no trace a reader can
+  // see, and the claim that anything is being checked is unfalsifiable.
+  const flagged = flaggedOf(data)
+  if (flagged.length > 0) {
+    lines.push(
+      "## Recently flagged",
+      "",
+      "Delisted from the tables above. These come back automatically if the repo does.",
+      "",
+      "| Repo | Reason | Flagged since |",
+      "|---|---|---|",
+    )
+    for (const e of flagged) {
+      lines.push(
+        `| [${escapeMarkdownCell(e.id)}](${e.url}) | ${e.flag.reason} | ${e.flag.since} |`,
+      )
+    }
     lines.push("")
   }
 
