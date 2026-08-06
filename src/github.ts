@@ -17,6 +17,33 @@ export function chunk<T>(items: T[], size: number): T[][] {
   return out
 }
 
+export type ThrottleAction = "backoff" | "throw" | "proceed"
+
+export function throttleAction(
+  status: number,
+  headers: Headers,
+  attempts: number,
+): ThrottleAction {
+  if (status >= 200 && status < 300) return "proceed"
+
+  if (status === 429) {
+    return attempts < 5 ? "backoff" : "throw"
+  }
+
+  if (status === 403) {
+    const hasRateLimitHeaders =
+      headers.get("x-ratelimit-remaining") === "0" || headers.has("retry-after")
+
+    if (hasRateLimitHeaders) {
+      return attempts < 5 ? "backoff" : "throw"
+    } else {
+      return "throw"
+    }
+  }
+
+  return "throw"
+}
+
 export function buildBatchQuery(ids: string[]): string {
   const parts = ids.map((id, i) => {
     const [owner, name] = id.split("/")
@@ -66,27 +93,39 @@ export class RealGitHubClient implements GitHubClient {
   async searchRepos(query: string, max: number): Promise<RepoMeta[]> {
     const out: RepoMeta[] = []
     for (let page = 1; out.length < max && page <= 10; page++) {
-      const url =
-        `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}` +
-        `&sort=stars&order=desc&per_page=100&page=${page}`
-      const res = await fetch(url, { headers: this.headers() })
-      if (res.status === 403 || res.status === 429) {
-        await Bun.sleep(2000 * page)
-        page--
-        continue
-      }
-      if (!res.ok) throw new Error(`search failed: ${res.status} ${await res.text()}`)
-      const body = (await res.json()) as { items?: Array<Record<string, unknown>> }
-      const items = body.items ?? []
-      if (items.length === 0) break
-      for (const it of items) {
-        out.push({
-          id: String(it.full_name),
-          stars: Number(it.stargazers_count),
-          pushed_at: String(it.pushed_at).slice(0, 10),
-          archived: Boolean(it.archived),
-          description: (it.description as string | null) ?? null,
-        })
+      let attempts = 0
+      while (true) {
+        const url =
+          `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}` +
+          `&sort=stars&order=desc&per_page=100&page=${page}`
+        const res = await fetch(url, { headers: this.headers() })
+        attempts++
+
+        const action = throttleAction(res.status, res.headers, attempts)
+
+        if (action === "backoff") {
+          await Bun.sleep(2000 * page)
+          continue
+        }
+
+        if (action === "throw") {
+          throw new Error(`search failed: ${res.status} ${await res.text()}`)
+        }
+
+        // action === "proceed"
+        const body = (await res.json()) as { items?: Array<Record<string, unknown>> }
+        const items = body.items ?? []
+        if (items.length === 0) break
+        for (const it of items) {
+          out.push({
+            id: String(it.full_name),
+            stars: Number(it.stargazers_count),
+            pushed_at: String(it.pushed_at).slice(0, 10),
+            archived: Boolean(it.archived),
+            description: (it.description as string | null) ?? null,
+          })
+        }
+        break
       }
     }
     return out.slice(0, max)
