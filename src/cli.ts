@@ -70,11 +70,13 @@ export async function main(argv: string[]): Promise<number> {
     return 0
   }
   if (cmd === "validate") {
+    const staleness = !argv.includes("--no-staleness")
     const problems = validate(
       loadSkills(SKILLS),
       readFileSync("README.md", "utf8"),
       readFileSync("data/skills.json", "utf8"),
       new Date(),
+      { staleness },
     )
     for (const p of problems) console.error(`FAIL ${p}`)
     if (problems.length > 0) return 1

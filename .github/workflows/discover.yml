@@ -23,6 +23,7 @@ jobs:
       - uses: peter-evans/create-pull-request@v7
         with:
           branch: bot/discover
+          branch-suffix: timestamp
           title: "feat: new candidate entries"
           body: |
             Candidates that cleared the inclusion bar (>=25 stars, not archived,

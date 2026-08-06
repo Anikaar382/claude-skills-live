@@ -64,3 +64,24 @@ test("validate aggregates both gates", () => {
   const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-01-01T00:00:00Z")] }
   expect(validate(data, "wrong", "wrong", NOW).length).toBe(3)
 })
+
+test("validate defaults to staleness on, and a stale entry fails it", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-01-01T00:00:00Z")] }
+  const problems = validate(data, renderReadme(data, NOW), renderJson(data), NOW)
+  expect(problems.length).toBe(1)
+  expect(problems[0]).toContain("a/b")
+})
+
+test("validate with staleness: false skips the staleness gate for the same stale entry", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-01-01T00:00:00Z")] }
+  const problems = validate(data, renderReadme(data, NOW), renderJson(data), NOW, {
+    staleness: false,
+  })
+  expect(problems).toEqual([])
+})
+
+test("validate with staleness: false still runs the reproducibility gate", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-01-01T00:00:00Z")] }
+  const problems = validate(data, "wrong", "wrong", NOW, { staleness: false })
+  expect(problems.length).toBe(2)
+})

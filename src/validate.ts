@@ -35,6 +35,20 @@ export function checkReproducible(
   return problems
 }
 
-export function validate(data: SkillsFile, readme: string, json: string, now: Date): string[] {
-  return [...checkStaleness(data, now), ...checkReproducible(data, readme, json, now)]
+export interface ValidateOptions {
+  staleness?: boolean
+}
+
+export function validate(
+  data: SkillsFile,
+  readme: string,
+  json: string,
+  now: Date,
+  opts: ValidateOptions = {},
+): string[] {
+  const staleness = opts.staleness ?? true
+  return [
+    ...(staleness ? checkStaleness(data, now) : []),
+    ...checkReproducible(data, readme, json, now),
+  ]
 }

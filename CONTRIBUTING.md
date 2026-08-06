@@ -21,10 +21,17 @@ does this automatically for anything archived, deleted, or untouched for 90 days
 
 ## How the automation works
 
-- `refresh` runs daily at 04:00 UTC and opens a metrics-only PR that auto-merges.
+- `refresh` runs daily at 04:00 UTC and opens a metrics-only PR that is
+  designed to auto-merge once checks pass. This requires a one-time repo
+  setup step (a PAT secret so the bot's own PR can trigger `validate`; see
+  the repo's post-push setup notes) — until that secret exists, refresh PRs
+  open but do not merge themselves.
 - `discover` runs daily at 06:00 UTC and opens an additions PR for human review.
-- `validate` runs on every PR: schema, README reproducibility, and a 48-hour
-  staleness gate on `last_checked`.
+- `validate` runs on every PR (schema and README/JSON reproducibility only —
+  a discover PR is meant to sit open for multi-day review, so it is not
+  failed by its own age) and on every push to `main` (schema, reproducibility,
+  and the 48-hour staleness gate on `last_checked`, which is a signal about
+  whether the scheduled refresh is still alive, not about any one PR).
 
 If the badge at the top of the README goes red, the automation has stopped and
 the freshness claim no longer holds. That is intentional — silence must not read
