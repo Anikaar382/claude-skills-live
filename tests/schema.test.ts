@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { EntrySchema, SkillsFileSchema } from "../src/schema"
+import { EntrySchema, SkillsFileSchema, GraveyardEntrySchema } from "../src/schema"
 
 const validEntry = {
   id: "obra/superpowers",
@@ -55,4 +55,26 @@ test("defaults tags to an empty array", () => {
 test("parses a whole skills file", () => {
   const file = { version: 1, entries: [validEntry] }
   expect(SkillsFileSchema.parse(file).entries.length).toBe(1)
+})
+
+test("rejects a graveyard entry with an id that has no slash", () => {
+  const bad = {
+    id: "superpowers",
+    name: "Superpowers",
+    url: "https://github.com/obra/superpowers",
+    reason: "archived",
+    removed: "2026-08-06",
+  }
+  expect(() => GraveyardEntrySchema.parse(bad)).toThrow()
+})
+
+test("accepts a graveyard entry with a valid owner/repo id", () => {
+  const ok = {
+    id: "obra/superpowers",
+    name: "Superpowers",
+    url: "https://github.com/obra/superpowers",
+    reason: "archived",
+    removed: "2026-08-06",
+  }
+  expect(GraveyardEntrySchema.parse(ok).id).toBe("obra/superpowers")
 })

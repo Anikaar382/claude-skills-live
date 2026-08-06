@@ -7,6 +7,7 @@ export const SourceSchema = z.enum(["discovery", "pr", "manual"])
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/
+const ID_REGEX = /^[^/\s]+\/[^/\s]+$/
 
 export const MetricsSchema = z.object({
   stars: z.number().int().nonnegative(),
@@ -24,7 +25,7 @@ export const FlagSchema = z.object({
 
 export const EntrySchema = z
   .object({
-    id: z.string().regex(/^[^/\s]+\/[^/\s]+$/),
+    id: z.string().regex(ID_REGEX),
     kind: KindSchema,
     name: z.string().min(1),
     url: z.string().url(),
@@ -52,7 +53,7 @@ export const SkillsFileSchema = z.object({
 })
 
 export const GraveyardEntrySchema = z.object({
-  id: z.string(),
+  id: z.string().regex(ID_REGEX),
   name: z.string(),
   url: z.string().url(),
   reason: FlagReasonSchema,
