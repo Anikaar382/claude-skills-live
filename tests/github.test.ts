@@ -1,5 +1,12 @@
 import { test, expect } from "bun:test"
-import { FakeGitHubClient, buildBatchQuery, chunk, throttleAction, type RepoMeta } from "../src/github"
+import {
+  FakeGitHubClient,
+  buildBatchQuery,
+  chunk,
+  graphqlFailure,
+  throttleAction,
+  type RepoMeta,
+} from "../src/github"
 
 function meta(id: string, stars = 100): RepoMeta {
   return { id, stars, pushed_at: "2026-08-01", archived: false, description: "d" }
@@ -60,4 +67,48 @@ test("throttleAction: 403 without rate-limit headers throws immediately", () => 
 test("throttleAction: 200 proceeds", () => {
   const headers = new Headers()
   expect(throttleAction(200, headers, 5)).toBe("proceed")
+})
+
+test("graphqlFailure accepts a healthy body", () => {
+  expect(graphqlFailure({ data: { r0: { nameWithOwner: "a/b" } } })).toBeNull()
+})
+
+test("graphqlFailure accepts a body whose only errors are NOT_FOUND", () => {
+  const body = {
+    data: { r0: null, r1: { nameWithOwner: "c/d" } },
+    errors: [{ type: "NOT_FOUND", message: "Could not resolve to a Repository" }],
+  }
+  expect(graphqlFailure(body)).toBeNull()
+})
+
+test("graphqlFailure rejects RATE_LIMITED even though the transport said 200", () => {
+  const msg = graphqlFailure({
+    data: null,
+    errors: [{ type: "RATE_LIMITED", message: "API rate limit exceeded" }],
+  })
+  expect(msg).toContain("RATE_LIMITED")
+  expect(msg).toContain("API rate limit exceeded")
+})
+
+test("graphqlFailure rejects a mixed batch containing one non-NOT_FOUND error", () => {
+  const msg = graphqlFailure({
+    data: { r0: null },
+    errors: [
+      { type: "NOT_FOUND", message: "gone" },
+      { type: "FORBIDDEN", message: "insufficient scope" },
+    ],
+  })
+  expect(msg).toContain("FORBIDDEN")
+  expect(msg).not.toContain("NOT_FOUND")
+})
+
+test("graphqlFailure rejects nullish data even with no errors array", () => {
+  expect(graphqlFailure({})).toContain("no data")
+  expect(graphqlFailure({ data: null })).toContain("no data")
+})
+
+test("graphqlFailure names an untyped error rather than dropping it", () => {
+  const msg = graphqlFailure({ data: null, errors: [{ message: "something broke" }] })
+  expect(msg).toContain("UNKNOWN")
+  expect(msg).toContain("something broke")
 })

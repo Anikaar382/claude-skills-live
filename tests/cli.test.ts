@@ -2,7 +2,9 @@ import { test, expect } from "bun:test"
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { writeArtifacts } from "../src/cli"
+import { assertBlastRadius, blastRadiusLimit, writeArtifacts } from "../src/cli"
+import { FakeGitHubClient } from "../src/github"
+import { refresh } from "../src/refresh"
 import { renderJson, renderReadme } from "../src/render"
 import type { Entry, SkillsFile } from "../src/schema"
 
@@ -78,4 +80,38 @@ test("writeArtifacts does not read skills.yaml from disk", () => {
   expect(json).not.toContain("wrong/on-disk")
   expect(readme).toBe(renderReadme(inMemory, NOW))
   expect(json).toBe(renderJson(inMemory))
+})
+
+test("blastRadiusLimit floors at 5 for tiny indexes and is 10% above that", () => {
+  expect(blastRadiusLimit(0)).toBe(5)
+  expect(blastRadiusLimit(50)).toBe(5)
+  expect(blastRadiusLimit(51)).toBe(6)
+  expect(blastRadiusLimit(343)).toBe(35)
+})
+
+test("a full-index blackout from the API trips the blast-radius guard", async () => {
+  const ids = Array.from({ length: 20 }, (_, i) => `owner${i}/repo${i}`)
+  const entries = ids.map((id) => entry(id))
+  // Every lookup comes back null, exactly what a RATE_LIMITED body produced
+  // before graphqlFailure existed, and what a real outage still looks like.
+  const gh = new FakeGitHubClient([], new Set(ids))
+
+  const refreshed = await refresh(gh, entries, NOW)
+  expect(refreshed.missing.length).toBe(20)
+  expect(() => assertBlastRadius(refreshed.missing, entries.length)).toThrow(/20 of 20/)
+  expect(() => assertBlastRadius(refreshed.missing, entries.length)).toThrow(/limit of 5/)
+})
+
+test("a plausible number of genuinely deleted repos passes the guard", async () => {
+  const ids = Array.from({ length: 100 }, (_, i) => `owner${i}/repo${i}`)
+  const entries = ids.map((id) => entry(id))
+  const gone = new Set(ids.slice(0, 9))
+  const gh = new FakeGitHubClient(
+    ids.slice(9).map((id) => ({ id, stars: 10, pushed_at: "2026-08-01", archived: false, description: "d" })),
+    gone,
+  )
+
+  const refreshed = await refresh(gh, entries, NOW)
+  expect(refreshed.missing.length).toBe(9)
+  expect(() => assertBlastRadius(refreshed.missing, entries.length)).not.toThrow()
 })

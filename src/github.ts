@@ -63,6 +63,43 @@ export function buildBatchQuery(ids: string[]): string {
   ].join("\n")
 }
 
+export interface GraphQLError {
+  type?: string
+  message?: string
+}
+
+export interface GraphQLBody {
+  data?: unknown
+  errors?: GraphQLError[]
+}
+
+function describeErrors(errors: GraphQLError[]): string {
+  return errors
+    .map((e) => `${e.type ?? "UNKNOWN"}: ${e.message ?? "(no message)"}`)
+    .join("; ")
+}
+
+// GitHub's GraphQL API answers rate limits, query timeouts and permission
+// failures with HTTP 200 and {"data": null, "errors": [{"type": "RATE_LIMITED"}]}.
+// Reading only res.ok therefore turns a throttled minute into "every repo in
+// the index was deleted". A NOT_FOUND error is the one benign case: it is how
+// the API reports a single dead repo inside an otherwise good batch, and the
+// corresponding alias is simply null.
+//
+// Returns a diagnostic message when the body must not be trusted, else null.
+export function graphqlFailure(body: GraphQLBody): string | null {
+  const errors = body.errors ?? []
+  const fatal = errors.filter((e) => e.type !== "NOT_FOUND")
+  if (fatal.length > 0) {
+    return `graphql returned ${fatal.length} error(s): ${describeErrors(fatal)}`
+  }
+  if (body.data === null || body.data === undefined) {
+    const suffix = errors.length > 0 ? ` (errors: ${describeErrors(errors)})` : ""
+    return `graphql returned no data${suffix}`
+  }
+  return null
+}
+
 function toMeta(node: {
   nameWithOwner: string
   stargazerCount: number
@@ -140,9 +177,12 @@ export class RealGitHubClient implements GitHubClient {
         body: JSON.stringify({ query: buildBatchQuery(group) }),
       })
       if (!res.ok) throw new Error(`graphql failed: ${res.status} ${await res.text()}`)
-      const body = (await res.json()) as { data?: Record<string, unknown> }
+      const body = (await res.json()) as GraphQLBody
+      const failure = graphqlFailure(body)
+      if (failure !== null) throw new Error(`graphql failed: ${res.status} ${failure}`)
+      const data = body.data as Record<string, unknown>
       group.forEach((id, i) => {
-        const node = body.data?.[`r${i}`]
+        const node = data[`r${i}`]
         out.set(id, node ? toMeta(node as Parameters<typeof toMeta>[0]) : null)
       })
     }
