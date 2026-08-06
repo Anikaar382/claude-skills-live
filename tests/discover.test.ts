@@ -46,6 +46,63 @@ test("accepts a legitimate prompt-engineering tool that is not a mirror", () => 
   expect(isEligible(m, new Set())).toBe(true)
 })
 
+// Descriptions that merely discuss, defend against, teach about, or compare
+// "system prompt" + "claude"/"leak" are common and legitimate — the fix
+// pins each of these against being caught by the retargeted, tighter
+// description patterns. An id-only false positive was never reported, so
+// each case here uses an innocuous id and puts the topical language only in
+// the description, matching how a real search result would look.
+test("accepts prompt-injection-defense tooling that discusses leaking, not leaked content", () => {
+  const m = meta("someone/redteam-toolkit", {
+    description:
+      "A red-teaming toolkit to test whether your system prompt leaks to users under adversarial input",
+  })
+  expect(isEligible(m, new Set())).toBe(true)
+})
+
+test("accepts a prompt-injection guard that prevents leakage rather than causing it", () => {
+  const m = meta("someone/injection-guard", {
+    description: "Prompt injection guard: prevents system prompt leakage to end users",
+  })
+  expect(isEligible(m, new Set())).toBe(true)
+})
+
+test("accepts a Gandalf-style CTF game about making an LLM leak its prompt", () => {
+  const m = meta("someone/prompt-ctf", {
+    description: "Gandalf-style CTF game where you try to make the LLM leak its system prompt",
+  })
+  expect(isEligible(m, new Set())).toBe(true)
+})
+
+test("accepts a curated list of example Claude system prompts for prompt engineering practice", () => {
+  const m = meta("someone/prompt-examples", {
+    description:
+      "A curated list of example system prompts for Claude, written by the community for prompt engineering practice",
+  })
+  expect(isEligible(m, new Set())).toBe(true)
+})
+
+test("accepts best-practice templates for writing a Claude system prompt", () => {
+  const m = meta("someone/prompt-templates", {
+    description: "Best practices and templates for writing a system prompt for Claude",
+  })
+  expect(isEligible(m, new Set())).toBe(true)
+})
+
+test("accepts a comparison of system prompt strategies across vendors including Claude", () => {
+  const m = meta("someone/prompt-compare", {
+    description: "Compare system prompt strategies across Claude, GPT-4, and Gemini",
+  })
+  expect(isEligible(m, new Set())).toBe(true)
+})
+
+test("accepts a blog post analysing how Claude's system prompt changed over time", () => {
+  const m = meta("someone/prompt-blog", {
+    description: "A blog post analysing why Claude's system prompt changed between versions",
+  })
+  expect(isEligible(m, new Set())).toBe(true)
+})
+
 test("toEntry truncates a long description to 120 characters", () => {
   const e = toEntry(meta("a/b", { description: "x".repeat(400) }), "2026-08-06")
   expect(e.summary.length).toBeLessThanOrEqual(120)
