@@ -4,6 +4,7 @@ import { RealGitHubClient } from "./github"
 import { reap } from "./reap"
 import { refresh } from "./refresh"
 import { renderJson, renderReadme } from "./render"
+import type { SkillsFile } from "./schema"
 import { loadGraveyard, loadSkills, saveSkills } from "./store"
 import { validate } from "./validate"
 
@@ -16,8 +17,8 @@ function token(): string {
   return t
 }
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10)
+function today(now: Date): string {
+  return now.toISOString().slice(0, 10)
 }
 
 function knownIds(): Set<string> {
@@ -27,20 +28,31 @@ function knownIds(): Set<string> {
   return ids
 }
 
-function writeArtifacts(): void {
-  const data = loadSkills(SKILLS)
-  writeFileSync("README.md", renderReadme(data, new Date()))
-  writeFileSync("data/skills.json", renderJson(data))
+// Renders both artifacts into memory first, then writes them back to back with
+// no computation in between, so a mid-write death leaves the smallest possible
+// window of inconsistency. Takes the in-memory SkillsFile and a single `now`
+// rather than re-reading skills.yaml or re-deriving the clock.
+export function writeArtifacts(
+  data: SkillsFile,
+  now: Date,
+  readmePath = "README.md",
+  jsonPath = "data/skills.json",
+): void {
+  const readme = renderReadme(data, now)
+  const json = renderJson(data)
+  writeFileSync(readmePath, readme)
+  writeFileSync(jsonPath, json)
 }
 
 export async function main(argv: string[]): Promise<number> {
   const cmd = argv[0]
   if (cmd === "discover") {
-    const found = await discover(new RealGitHubClient(token()), knownIds(), today())
+    const now = new Date()
+    const found = await discover(new RealGitHubClient(token()), knownIds(), today(now))
     const data = loadSkills(SKILLS)
     data.entries.push(...found)
     saveSkills(SKILLS, data)
-    writeArtifacts()
+    writeArtifacts(data, now)
     console.log(`discovered ${found.length} new entries`)
     return 0
   }
@@ -50,8 +62,9 @@ export async function main(argv: string[]): Promise<number> {
     const gh = new RealGitHubClient(token())
     const refreshed = await refresh(gh, data.entries, now)
     const reaped = reap(refreshed.entries, refreshed.missing, now)
-    saveSkills(SKILLS, { version: 1, entries: reaped.entries })
-    writeArtifacts()
+    const nextData: SkillsFile = { version: 1, entries: reaped.entries }
+    saveSkills(SKILLS, nextData)
+    writeArtifacts(nextData, now)
     for (const f of reaped.flagged) console.log(`flagged ${f.id}: ${f.reason}`)
     console.log(`refreshed ${refreshed.entries.length}, flagged ${reaped.flagged.length}`)
     return 0
@@ -69,7 +82,9 @@ export async function main(argv: string[]): Promise<number> {
     return 0
   }
   if (cmd === "render") {
-    writeArtifacts()
+    const now = new Date()
+    const data = loadSkills(SKILLS)
+    writeArtifacts(data, now)
     console.log("rendered README.md and data/skills.json")
     return 0
   }
