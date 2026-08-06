@@ -92,7 +92,7 @@ export class RealGitHubClient implements GitHubClient {
 
   async searchRepos(query: string, max: number): Promise<RepoMeta[]> {
     const out: RepoMeta[] = []
-    for (let page = 1; out.length < max && page <= 10; page++) {
+    pageLoop: for (let page = 1; out.length < max && page <= 10; page++) {
       let attempts = 0
       while (true) {
         const url =
@@ -115,7 +115,7 @@ export class RealGitHubClient implements GitHubClient {
         // action === "proceed"
         const body = (await res.json()) as { items?: Array<Record<string, unknown>> }
         const items = body.items ?? []
-        if (items.length === 0) break
+        if (items.length === 0) break pageLoop
         for (const it of items) {
           out.push({
             id: String(it.full_name),
