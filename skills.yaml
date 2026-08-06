@@ -1912,25 +1912,6 @@ entries:
       pushed_at: 2026-08-06
       archived: false
       last_checked: 2026-08-06T22:34:27Z
-  - id: codeaashu/claude-code
-    kind: skill
-    name: claude-code
-    url: https://github.com/codeaashu/claude-code
-    summary: "Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster "
-    tags: []
-    added: 2026-08-06
-    source: discovery
-    status: flagged
-    metrics:
-      stars: 3205
-      pushed_at: 2026-04-22
-      archived: false
-      last_checked: 2026-08-06T22:34:27Z
-    flag:
-      reason: stale
-      since: 2026-08-06
-      issue: null
-      grace_until: null
   - id: composio-community/awesome-claude-plugins
     kind: skill
     name: awesome-claude-plugins
