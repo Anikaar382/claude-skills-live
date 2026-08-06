@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test"
 import { renderJson, renderReadme } from "../src/render"
-import { checkNoDead, checkReproducible, checkStaleness, validate } from "../src/validate"
-import type { Entry, SkillsFile } from "../src/schema"
+import { checkGraveyard, checkNoDead, checkReproducible, checkStaleness, validate } from "../src/validate"
+import type { Entry, GraveyardFile, SkillsFile } from "../src/schema"
 
 function entry(id: string, checked: string, over: Partial<Entry> = {}): Entry {
   return {
@@ -158,4 +158,61 @@ test("--no-staleness does not suppress the no-dead-entries gate", () => {
   })
   expect(problems.length).toBe(1)
   expect(problems[0]).toContain("archived")
+})
+
+test("checkGraveyard fails when a blocked entry is re-added to skills.yaml", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("bad/mirror", "2026-08-05T04:00:00Z")] }
+  const graveyard: GraveyardFile = {
+    version: 1,
+    entries: [
+      {
+        id: "bad/mirror",
+        name: "mirror",
+        url: "https://github.com/bad/mirror",
+        reason: "blocked",
+        removed: "2026-08-01",
+      },
+    ],
+  }
+  const problems = checkGraveyard(data, graveyard)
+  expect(problems.length).toBe(1)
+  expect(problems[0]).toContain("bad/mirror")
+  expect(problems[0]).toContain("blocked")
+})
+
+test("checkGraveyard passes when the two files are disjoint", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("good/repo", "2026-08-05T04:00:00Z")] }
+  const graveyard: GraveyardFile = {
+    version: 1,
+    entries: [
+      {
+        id: "bad/mirror",
+        name: "mirror",
+        url: "https://github.com/bad/mirror",
+        reason: "blocked",
+        removed: "2026-08-01",
+      },
+    ],
+  }
+  expect(checkGraveyard(data, graveyard)).toEqual([])
+})
+
+test("checkGraveyard catches a graveyarded entry re-added as flagged, not just active", () => {
+  const e = entry("bad/mirror", "2026-08-05T04:00:00Z", {
+    status: "flagged",
+    flag: { reason: "stale", since: "2026-08-01", issue: null, grace_until: null },
+  })
+  const graveyard: GraveyardFile = {
+    version: 1,
+    entries: [
+      {
+        id: "bad/mirror",
+        name: "mirror",
+        url: "https://github.com/bad/mirror",
+        reason: "blocked",
+        removed: "2026-08-01",
+      },
+    ],
+  }
+  expect(checkGraveyard({ version: 1, entries: [e] }, graveyard).length).toBe(1)
 })

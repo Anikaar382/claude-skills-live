@@ -1,6 +1,6 @@
 import { STALE_DAYS, daysBetween } from "./reap"
 import { renderJson, renderReadme } from "./render"
-import type { Entry, SkillsFile } from "./schema"
+import type { Entry, GraveyardFile, SkillsFile } from "./schema"
 
 export const MAX_CHECK_AGE_HOURS = 48
 
@@ -51,6 +51,22 @@ export function checkNoDead(data: SkillsFile, now: Date): string[] {
         `${e.id}: listed as active but last pushed ${age} days ago, ` +
           `at or over the ${STALE_DAYS}-day limit`,
       )
+    }
+  }
+  return problems
+}
+
+// The graveyard is the permanent exclusion list — it is what makes a
+// content-policy block stick. validate never read it, so a PR could simply
+// re-add a blocked entry to skills.yaml and pass CI, and the daily discover
+// run would not catch it either since knownIds() only suppresses re-discovery.
+export function checkGraveyard(data: SkillsFile, graveyard: GraveyardFile): string[] {
+  const buried = new Map(graveyard.entries.map((e) => [e.id, e.reason]))
+  const problems: string[] = []
+  for (const e of data.entries) {
+    const reason = buried.get(e.id)
+    if (reason !== undefined) {
+      problems.push(`${e.id}: present in skills.yaml but graveyarded as ${reason}`)
     }
   }
   return problems

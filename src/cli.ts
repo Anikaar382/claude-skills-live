@@ -6,7 +6,7 @@ import { refresh } from "./refresh"
 import { renderJson, renderReadme } from "./render"
 import type { SkillsFile } from "./schema"
 import { loadGraveyard, loadSkills, saveSkills } from "./store"
-import { validate } from "./validate"
+import { checkGraveyard, validate } from "./validate"
 
 const SKILLS = "skills.yaml"
 const GRAVEYARD = "graveyard.yaml"
@@ -97,13 +97,19 @@ export async function main(argv: string[]): Promise<number> {
   }
   if (cmd === "validate") {
     const staleness = !argv.includes("--no-staleness")
-    const problems = validate(
-      loadSkills(SKILLS),
-      readFileSync("README.md", "utf8"),
-      readFileSync("data/skills.json", "utf8"),
-      new Date(),
-      { staleness },
-    )
+    const data = loadSkills(SKILLS)
+    const problems = [
+      ...validate(
+        data,
+        readFileSync("README.md", "utf8"),
+        readFileSync("data/skills.json", "utf8"),
+        new Date(),
+        { staleness },
+      ),
+      // Unconditional, like checkNoDead: re-adding a graveyarded entry is a
+      // content question, not a freshness one.
+      ...checkGraveyard(data, loadGraveyard(GRAVEYARD)),
+    ]
     for (const p of problems) console.error(`FAIL ${p}`)
     if (problems.length > 0) return 1
     console.log("validate: ok")
