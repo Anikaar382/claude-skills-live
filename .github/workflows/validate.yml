@@ -12,6 +12,13 @@ on:
   # rather than for content.
   schedule:
     - cron: "30 5 * * *"
+  # Manual trigger so the gate can be smoke-tested without waiting for the
+  # clock, and so a fresh repo can turn its badge green on day one instead of
+  # showing grey. The job's event guards are `== 'pull_request'` and
+  # `!= 'pull_request'`, so a dispatched run lands in the second branch and
+  # gets the full gate, staleness included — which is what you want from a
+  # manual check.
+  workflow_dispatch:
 
 permissions:
   contents: read
