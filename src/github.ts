@@ -4,6 +4,7 @@ export interface RepoMeta {
   pushed_at: string
   archived: boolean
   description: string | null
+  fork: boolean
 }
 
 export interface GitHubClient {
@@ -58,6 +59,7 @@ export function buildBatchQuery(ids: string[]): string {
     "  stargazerCount",
     "  pushedAt",
     "  isArchived",
+    "  isFork",
     "  description",
     "}",
   ].join("\n")
@@ -105,6 +107,7 @@ function toMeta(node: {
   stargazerCount: number
   pushedAt: string
   isArchived: boolean
+  isFork: boolean
   description: string | null
 }): RepoMeta {
   return {
@@ -113,6 +116,7 @@ function toMeta(node: {
     pushed_at: node.pushedAt.slice(0, 10),
     archived: node.isArchived,
     description: node.description,
+    fork: node.isFork,
   }
 }
 
@@ -160,6 +164,7 @@ export class RealGitHubClient implements GitHubClient {
             pushed_at: String(it.pushed_at).slice(0, 10),
             archived: Boolean(it.archived),
             description: (it.description as string | null) ?? null,
+            fork: Boolean(it.fork),
           })
         }
         break

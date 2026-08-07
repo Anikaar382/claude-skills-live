@@ -1,13 +1,30 @@
+import { daysBetween, STALE_DAYS } from "./reap"
 import type { GitHubClient, RepoMeta } from "./github"
 import type { Entry } from "./schema"
 
 export const MIN_STARS = 25
 
+// Topic search alone is structurally blind to any repo that carries no GitHub
+// topics at all — an audit found 7 of 14 well-known misses in exactly that
+// state. Name/description queries are the only way to reach those, so they
+// are load-bearing here, not decorative: removing them silently regresses
+// coverage back to topics-only with no test failure to catch it (see the
+// "SEARCH_QUERIES contains both topic and name/description queries" shape
+// test in discover.test.ts).
 export const SEARCH_QUERIES = [
   "topic:claude-code",
   "topic:claude-skills",
   "topic:agent-skills",
   "topic:claude-code-plugin",
+  "topic:claude-code-skills",
+  "topic:claude-ai",
+  "topic:agentic-coding",
+  "topic:openskills",
+  '"claude code" in:name,description',
+  '"claude skills" in:name,description',
+  '"agent skills" in:name,description',
+  '"claude-code" in:name',
+  "SKILL.md in:readme",
 ] as const
 
 // A false NEGATIVE here is recoverable: discover() only feeds a PR that a human
@@ -91,10 +108,15 @@ export const BLOCKED_DESCRIPTION_PATTERNS = [
   ),
 ] as const
 
-export function isEligible(meta: RepoMeta, known: Set<string>): boolean {
+export function isEligible(meta: RepoMeta, known: Set<string>, now: Date = new Date()): boolean {
   if (known.has(meta.id)) return false
   if (meta.archived) return false
+  if (meta.fork) return false
   if (meta.stars < MIN_STARS) return false
+  // Admitting a repo the reaper would flag `stale` on its very next run is
+  // incoherent: it would land as status "active" and then flip within days,
+  // briefly inflating a "0 dead entries" badge with something already dead.
+  if (daysBetween(meta.pushed_at, now) >= STALE_DAYS) return false
   const normalizedId = normalizeId(meta.id)
   if (BLOCKED_ID_PATTERNS.some((re) => re.test(normalizedId))) return false
   const normalizedDescription = normalizeDescription(meta.description ?? "")
@@ -129,13 +151,17 @@ export async function discover(
   gh: GitHubClient,
   known: Set<string>,
   today: string,
-  perQuery = 100,
+  // GitHub's Search API hard-caps any single query at 1000 results
+  // (10 pages of 100). RealGitHubClient.searchRepos already paginates that
+  // far, so this is the real ceiling, not an arbitrary default.
+  perQuery = 1000,
 ): Promise<Entry[]> {
+  const now = new Date(`${today}T00:00:00Z`)
   const seen = new Set(known)
   const out: Entry[] = []
   for (const query of SEARCH_QUERIES) {
     for (const meta of await gh.searchRepos(query, perQuery)) {
-      if (!isEligible(meta, seen)) continue
+      if (!isEligible(meta, seen, now)) continue
       seen.add(meta.id)
       out.push(toEntry(meta, today))
     }

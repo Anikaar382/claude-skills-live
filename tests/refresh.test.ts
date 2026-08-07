@@ -4,7 +4,7 @@ import { refresh } from "../src/refresh"
 import type { Entry } from "../src/schema"
 
 function meta(id: string, over: Partial<RepoMeta> = {}): RepoMeta {
-  return { id, stars: 500, pushed_at: "2026-08-05", archived: false, description: "d", ...over }
+  return { id, stars: 500, pushed_at: "2026-08-05", archived: false, description: "d", fork: false, ...over }
 }
 
 function entry(id: string, over: Partial<Entry> = {}): Entry {

@@ -75,7 +75,7 @@ export async function main(argv: string[]): Promise<number> {
   const cmd = argv[0]
   if (cmd === "discover") {
     const now = new Date()
-    const found = await discover(new RealGitHubClient(token()), knownIds(), today(now))
+    const found = await discover(new RealGitHubClient(token()), knownIds(), today(now), 1000)
     const data = loadSkills(SKILLS)
     data.entries.push(...found)
     saveSkills(SKILLS, data)

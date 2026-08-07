@@ -120,7 +120,7 @@ test("a plausible number of genuinely deleted repos passes the guard", async () 
   const entries = ids.map((id) => entry(id))
   const gone = new Set(ids.slice(0, 9))
   const gh = new FakeGitHubClient(
-    ids.slice(9).map((id) => ({ id, stars: 10, pushed_at: "2026-08-01", archived: false, description: "d" })),
+    ids.slice(9).map((id) => ({ id, stars: 10, pushed_at: "2026-08-01", archived: false, description: "d", fork: false })),
     gone,
   )
 

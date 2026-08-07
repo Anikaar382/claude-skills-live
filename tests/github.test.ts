@@ -9,7 +9,7 @@ import {
 } from "../src/github"
 
 function meta(id: string, stars = 100): RepoMeta {
-  return { id, stars, pushed_at: "2026-08-01", archived: false, description: "d" }
+  return { id, stars, pushed_at: "2026-08-01", archived: false, description: "d", fork: false }
 }
 
 test("chunk splits into fixed-size groups", () => {

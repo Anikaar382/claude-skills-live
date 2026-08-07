@@ -1,9 +1,17 @@
 import { test, expect } from "bun:test"
 import { FakeGitHubClient, type RepoMeta } from "../src/github"
-import { discover, isEligible, toEntry } from "../src/discover"
+import { discover, isEligible, SEARCH_QUERIES, toEntry } from "../src/discover"
 
 function meta(id: string, over: Partial<RepoMeta> = {}): RepoMeta {
-  return { id, stars: 100, pushed_at: "2026-08-01", archived: false, description: "A thing.", ...over }
+  return {
+    id,
+    stars: 100,
+    pushed_at: "2026-08-01",
+    archived: false,
+    description: "A thing.",
+    fork: false,
+    ...over,
+  }
 }
 
 test("rejects repos under the star bar", () => {
@@ -13,6 +21,18 @@ test("rejects repos under the star bar", () => {
 
 test("rejects archived repos", () => {
   expect(isEligible(meta("a/b", { archived: true }), new Set())).toBe(false)
+})
+
+test("rejects a fork even when it clears stars and is not archived", () => {
+  expect(isEligible(meta("a/b", { fork: true, stars: 10_000, archived: false }), new Set())).toBe(false)
+})
+
+test("rejects a candidate whose pushed_at is 90+ days stale, accepts 89 days", () => {
+  const now = new Date("2026-08-06T00:00:00Z")
+  const stale = meta("a/b", { pushed_at: "2026-05-08" }) // 90 days before now
+  const fresh = meta("a/b", { pushed_at: "2026-05-09" }) // 89 days before now
+  expect(isEligible(stale, new Set(), now)).toBe(false)
+  expect(isEligible(fresh, new Set(), now)).toBe(true)
 })
 
 test("rejects ids already known", () => {
@@ -132,4 +152,17 @@ test("discover excludes ids already known", async () => {
   const gh = new FakeGitHubClient([meta("a/b"), meta("c/d")])
   const found = await discover(gh, new Set(["a/b"]), "2026-08-06", 10)
   expect(found.map((e) => e.id)).toEqual(["c/d"])
+})
+
+// Pins the shape of SEARCH_QUERIES so a future edit cannot silently collapse
+// it back to topics-only: topic search is structurally blind to any repo
+// that carries no GitHub topics at all, which is how the largest misses in
+// the audit went unindexed.
+test("SEARCH_QUERIES contains both topic-qualified and name/description queries", () => {
+  const topicQueries = SEARCH_QUERIES.filter((q) => q.startsWith("topic:"))
+  const nameOrDescriptionQueries = SEARCH_QUERIES.filter(
+    (q) => q.includes("in:name") || q.includes("in:description") || q.includes("in:readme"),
+  )
+  expect(topicQueries.length).toBeGreaterThanOrEqual(4)
+  expect(nameOrDescriptionQueries.length).toBeGreaterThan(0)
 })
