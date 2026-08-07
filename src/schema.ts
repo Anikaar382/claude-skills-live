@@ -1,7 +1,18 @@
 import { z } from "zod"
 
 export const KindSchema = z.enum(["framework", "skill", "plugin", "mcp", "tool"])
-export const FlagReasonSchema = z.enum(["stale", "archived", "gone", "dispute", "blocked"])
+// `blocked` is a content-policy exclusion (leaked or proprietary source).
+// `offtopic` is a scope exclusion: real, legitimate software that simply is not
+// Claude Code / Agent Skills tooling. Both are permanent human decisions, but
+// conflating them would make the graveyard unreadable.
+export const FlagReasonSchema = z.enum([
+  "stale",
+  "archived",
+  "gone",
+  "dispute",
+  "blocked",
+  "offtopic",
+])
 export const StatusSchema = z.enum(["active", "flagged", "removed"])
 export const SourceSchema = z.enum(["discovery", "pr", "manual"])
 

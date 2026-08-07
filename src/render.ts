@@ -82,7 +82,10 @@ function row(e: Entry): string {
   const stars = e.metrics.stars.toLocaleString("en-US")
   const id = escapeMarkdownCell(e.id)
   const summary = escapeMarkdownCell(e.summary)
-  return `| [${id}](${e.url}) | ${stars} | ${e.metrics.pushed_at} | ${summary} |`
+  // Tags are sorted so the column is stable regardless of the order a curator
+  // happened to write them in — the reproducibility gate compares bytes.
+  const tags = [...e.tags].sort().map((t) => escapeMarkdownCell(t)).join(", ")
+  return `| [${id}](${e.url}) | ${stars} | ${e.metrics.pushed_at} | ${tags} | ${summary} |`
 }
 
 export function renderReadme(data: SkillsFile, now: Date): string {
@@ -114,7 +117,12 @@ export function renderReadme(data: SkillsFile, now: Date): string {
       .filter((e) => e.kind === kind)
       .sort((a, b) => b.metrics.stars - a.metrics.stars || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     if (group.length === 0) continue
-    lines.push(`## ${KIND_HEADING[kind]}`, "", "| Repo | Stars | Last push | What |", "|---|---|---|---|")
+    lines.push(
+      `## ${KIND_HEADING[kind]}`,
+      "",
+      "| Repo | Stars | Last push | Tags | What |",
+      "|---|---|---|---|---|",
+    )
     for (const e of group) lines.push(row(e))
     lines.push("")
   }

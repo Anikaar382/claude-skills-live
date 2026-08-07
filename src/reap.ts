@@ -5,9 +5,16 @@ export const STALE_DAYS = 90
 const MS_PER_DAY = 86_400_000
 
 // Reasons the reaper derives from observable repo state, and may therefore
-// also un-derive. `blocked` and `dispute` are human decisions and are never
-// touched by automation in either direction.
+// also un-derive.
 const AUTO_REASONS: ReadonlySet<FlagReason> = new Set<FlagReason>(["stale", "archived", "gone"])
+
+// Human decisions. Automation never sets, clears or overwrites these, in either
+// direction — a repo being healthy again does not undo a scope or policy call.
+const HUMAN_REASONS: ReadonlySet<FlagReason> = new Set<FlagReason>([
+  "blocked",
+  "dispute",
+  "offtopic",
+])
 
 // Returns Infinity when `a` cannot be parsed. The DATE regex in schema.ts is
 // shape-only, so "2026-13-45" is a legal-looking date that Date.parse rejects.
@@ -47,8 +54,9 @@ export function reap(
   const revived: string[] = []
 
   const out = entries.map((entry) => {
-    // Never override human decisions (blocked, dispute), in either direction.
-    if (entry.flag?.reason === "blocked" || entry.flag?.reason === "dispute") return entry
+    // Never override human decisions (blocked, dispute, offtopic), in either
+    // direction.
+    if (HUMAN_REASONS.has(entry.flag?.reason as FlagReason)) return entry
 
     const raw = autoReason(entry, gone.has(entry.id), now)
 

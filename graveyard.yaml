@@ -1,5 +1,15 @@
 version: 1
 entries:
+  - id: CherryHQ/cherry-studio
+    name: cherry-studio
+    url: https://github.com/CherryHQ/cherry-studio
+    reason: offtopic
+    removed: 2026-08-07
+  - id: Natively-AI-assistant/natively-cluely-ai-assistant
+    name: natively-cluely-ai-assistant
+    url: https://github.com/Natively-AI-assistant/natively-cluely-ai-assistant
+    reason: offtopic
+    removed: 2026-08-07
   - id: Piebald-AI/claude-code-system-prompts
     name: claude-code-system-prompts
     url: https://github.com/Piebald-AI/claude-code-system-prompts
@@ -10,8 +20,73 @@ entries:
     url: https://github.com/asgeirtj/system_prompts_leaks
     reason: blocked
     removed: 2026-08-06
+  - id: chatboxai/chatbox
+    name: chatbox
+    url: https://github.com/chatboxai/chatbox
+    reason: offtopic
+    removed: 2026-08-07
   - id: codeaashu/claude-code
     name: claude-code
     url: https://github.com/codeaashu/claude-code
     reason: blocked
+    removed: 2026-08-07
+  - id: dstackai/dstack
+    name: dstack
+    url: https://github.com/dstackai/dstack
+    reason: offtopic
+    removed: 2026-08-07
+  - id: glincker/thesvg
+    name: thesvg
+    url: https://github.com/glincker/thesvg
+    reason: offtopic
+    removed: 2026-08-07
+  - id: heshengtao/super-agent-party
+    name: super-agent-party
+    url: https://github.com/heshengtao/super-agent-party
+    reason: offtopic
+    removed: 2026-08-07
+  - id: ikaijua/Awesome-AITools
+    name: Awesome-AITools
+    url: https://github.com/ikaijua/Awesome-AITools
+    reason: offtopic
+    removed: 2026-08-07
+  - id: jeecgboot/JeecgBoot
+    name: JeecgBoot
+    url: https://github.com/jeecgboot/JeecgBoot
+    reason: offtopic
+    removed: 2026-08-07
+  - id: kubesphere/kubesphere
+    name: kubesphere
+    url: https://github.com/kubesphere/kubesphere
+    reason: offtopic
+    removed: 2026-08-07
+  - id: kyegomez/OpenMythos
+    name: OpenMythos
+    url: https://github.com/kyegomez/OpenMythos
+    reason: offtopic
+    removed: 2026-08-07
+  - id: metalbear-co/mirrord
+    name: mirrord
+    url: https://github.com/metalbear-co/mirrord
+    reason: offtopic
+    removed: 2026-08-07
+  - id: rowboatlabs/rowboat
+    name: rowboat
+    url: https://github.com/rowboatlabs/rowboat
+    reason: offtopic
+    removed: 2026-08-07
+  - id: tinyplex/tinybase
+    name: tinybase
+    url: https://github.com/tinyplex/tinybase
+    reason: offtopic
+    removed: 2026-08-07
+  - id: xixu-me/xget
+    name: xget
+    url: https://github.com/xixu-me/xget
+    reason: offtopic
+    removed: 2026-08-07
+  - id: xonsh/xonsh
+    name: xonsh
+    url: https://github.com/xonsh/xonsh
+    reason: offtopic
     removed: 2026-08-07

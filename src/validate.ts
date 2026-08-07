@@ -40,7 +40,8 @@ function isGraced(entry: Entry, now: Date): boolean {
 // the same exemption. The entry is still held by a human decision; CI is not
 // the right place to shout about it.
 function isHumanHeld(entry: Entry): boolean {
-  return entry.flag?.reason === "dispute" || entry.flag?.reason === "blocked"
+  const r = entry.flag?.reason
+  return r === "dispute" || r === "blocked" || r === "offtopic"
 }
 
 // The README badge claims "0 dead entries". Nothing computed that number — it
