@@ -22,6 +22,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: peter-evans/create-pull-request@v7
         with:
+          # See refresh.yml: a PR opened with GITHUB_TOKEN gets no CI run at
+          # all, which would leave a human reviewing candidate additions with
+          # no signal about whether they even validate.
+          token: ${{ secrets.PAT_TOKEN }}
           branch: bot/discover
           branch-suffix: timestamp
           title: "feat: new candidate entries"

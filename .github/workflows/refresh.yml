@@ -23,6 +23,11 @@ jobs:
       - id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
+          # Not GITHUB_TOKEN. GitHub refuses to fire `pull_request` workflows
+          # for PRs opened with the default token, so validate would never run
+          # on this PR and branch protection would block the auto-merge below
+          # forever. A PAT is the only thing that makes the loop close.
+          token: ${{ secrets.PAT_TOKEN }}
           branch: bot/refresh
           title: "chore: daily metrics refresh"
           body: |
