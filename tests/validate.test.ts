@@ -273,6 +273,14 @@ test("checkNoDead exempts an active entry held by a blocked flag", () => {
   expect(checkNoDead({ version: 1, entries: [e] }, NOW)).toEqual([])
 })
 
+test("checkNoDead exempts an active entry held by an offtopic flag", () => {
+  const e = entry("a/b", "2026-08-05T04:00:00Z", {
+    flag: { reason: "offtopic", since: "2026-06-01", issue: null, grace_until: null },
+    metrics: { stars: 10, pushed_at: "2020-01-01", archived: true, last_checked: "2026-08-05T04:00:00Z" },
+  })
+  expect(checkNoDead({ version: 1, entries: [e] }, NOW)).toEqual([])
+})
+
 test("an auto flag reason on an active entry is NOT a human hold", () => {
   // Only dispute and blocked deadlock reap. A stale-flagged active entry that
   // goes archived is still something the reaper will fix on its next run.

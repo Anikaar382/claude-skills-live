@@ -79,6 +79,17 @@ test("accepts a graveyard entry with reason blocked", () => {
   expect(GraveyardEntrySchema.parse(ok).reason).toBe("blocked")
 })
 
+test("accepts a graveyard entry with reason offtopic", () => {
+  const ok = {
+    id: "obra/superpowers",
+    name: "Superpowers",
+    url: "https://github.com/obra/superpowers",
+    reason: "offtopic",
+    removed: "2026-08-06",
+  }
+  expect(GraveyardEntrySchema.parse(ok).reason).toBe("offtopic")
+})
+
 test("accepts a graveyard entry with a valid owner/repo id", () => {
   const ok = {
     id: "obra/superpowers",

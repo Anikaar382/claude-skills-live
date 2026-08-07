@@ -238,6 +238,56 @@ test("pipe escaping still holds alongside the new escapes", () => {
   expect(md).toContain("CLI \\| \\[API\\] \\<tool\\>")
 })
 
+test("tags render alphabetically sorted regardless of the order they were entered in", () => {
+  const data: SkillsFile = {
+    version: 1,
+    entries: [entry("a/tags", 1, { tags: ["zeta", "alpha", "mid"] })],
+  }
+  const md = renderReadme(data, NOW)
+  expect(md).toContain("| alpha, mid, zeta |")
+})
+
+test("an entry with an empty tags array renders an empty cell without breaking column count", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/notags", 1, { tags: [] })] }
+  const md = renderReadme(data, NOW)
+  const lines = md.split("\n")
+  const headerIdx = lines.findIndex((l) => l.startsWith("| Repo |"))
+  const header = lines[headerIdx]!
+  const dataRow = lines[headerIdx + 2]!
+  expect(dataRow.startsWith("| [a/notags]")).toBe(true)
+  expect(dataRow.split("|").length).toBe(header.split("|").length)
+  expect(dataRow).toContain("|  |")
+})
+
+test("the kind table header and separator both have five columns", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/a", 1)] }
+  const md = renderReadme(data, NOW)
+  const lines = md.split("\n")
+  const headerIdx = lines.findIndex((l) => l.startsWith("| Repo |"))
+  expect(lines[headerIdx]).toBe("| Repo | Stars | Last push | Tags | What |")
+  expect(lines[headerIdx + 1]).toBe("|---|---|---|---|---|")
+})
+
+test("a data row has the same number of cells as the header", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/a", 1, { tags: ["x", "y"] })] }
+  const md = renderReadme(data, NOW)
+  const lines = md.split("\n")
+  const headerIdx = lines.findIndex((l) => l.startsWith("| Repo |"))
+  const header = lines[headerIdx]!
+  const dataRow = lines[headerIdx + 2]!
+  expect(dataRow.split("|").length).toBe(header.split("|").length)
+})
+
+test("rendering is byte-identical when tags are given in a different order", () => {
+  const withOrder = (tags: string[]) => ({
+    version: 1 as const,
+    entries: [entry("a/tagorder", 1, { tags })],
+  })
+  const data1: SkillsFile = withOrder(["zeta", "alpha", "mid"])
+  const data2: SkillsFile = withOrder(["mid", "zeta", "alpha"])
+  expect(renderReadme(data1, NOW)).toBe(renderReadme(data2, NOW))
+})
+
 test("the badge is built from REPO_SLUG, not a second hardcoded literal", () => {
   const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
   expect(VALIDATE_BADGE_URL).toBe(

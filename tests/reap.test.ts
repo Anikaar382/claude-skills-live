@@ -131,6 +131,40 @@ test("entry flagged dispute and stale is returned untouched", () => {
   expect(entries[0]).toEqual(e)
 })
 
+test("entry flagged offtopic and archived is returned untouched", () => {
+  const e = entry("a/b", "2026-01-01", {
+    status: "flagged",
+    flag: { reason: "offtopic", since: "2026-07-01", issue: null, grace_until: null },
+    metrics: { stars: 10, pushed_at: "2026-01-01", archived: true, last_checked: "2026-08-06T04:00:00Z" },
+  })
+  const { entries, flagged, revived } = reap([e], [], NOW)
+  expect(flagged).toEqual([])
+  expect(revived).toEqual([])
+  expect(entries[0]).toEqual(e)
+})
+
+test("entry flagged offtopic and in missing is returned untouched", () => {
+  const e = entry("a/b", "2026-08-05", {
+    status: "flagged",
+    flag: { reason: "offtopic", since: "2026-07-01", issue: null, grace_until: null },
+  })
+  const { entries, flagged, revived } = reap([e], ["a/b"], NOW)
+  expect(flagged).toEqual([])
+  expect(revived).toEqual([])
+  expect(entries[0]).toEqual(e)
+})
+
+test("entry flagged offtopic and stale is returned untouched", () => {
+  const e = entry("a/b", "2026-01-01", {
+    status: "flagged",
+    flag: { reason: "offtopic", since: "2026-06-01", issue: null, grace_until: null },
+  })
+  const { entries, flagged, revived } = reap([e], [], NOW)
+  expect(flagged).toEqual([])
+  expect(revived).toEqual([])
+  expect(entries[0]).toEqual(e)
+})
+
 test("reason transition from stale to archived preserves since and issue", () => {
   const e = entry("a/b", "2026-01-01", {
     status: "flagged",
@@ -221,6 +255,19 @@ test("a disputed entry is never revived even when the repo looks healthy", () =>
   const e = entry("a/b", "2026-08-05", {
     status: "flagged",
     flag: { reason: "dispute", since: "2026-06-01", issue: 9, grace_until: null },
+  })
+  const { entries, revived, flagged } = reap([e], [], NOW)
+  expect(revived).toEqual([])
+  expect(flagged).toEqual([])
+  expect(entries[0]).toEqual(e)
+})
+
+test("an offtopic entry is never revived even when the repo looks healthy", () => {
+  // The case that matters most: automation must never revive an entry a human
+  // removed for being out of scope, just because the repo pushed again.
+  const e = entry("a/b", "2026-08-05", {
+    status: "flagged",
+    flag: { reason: "offtopic", since: "2026-06-01", issue: null, grace_until: null },
   })
   const { entries, revived, flagged } = reap([e], [], NOW)
   expect(revived).toEqual([])
