@@ -1,6 +1,6 @@
 # skills-live
 
-![validate](https://github.com/pjdurden/skills-live/actions/workflows/validate.yml/badge.svg)
+![validate](https://github.com/pjdurden/claude-skills-live/actions/workflows/validate.yml/badge.svg)
 
 An automatically verified index of Claude Code and Agent Skills tooling.
 

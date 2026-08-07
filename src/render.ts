@@ -15,7 +15,7 @@ type FlaggedEntry = Entry & { flag: Flag }
 // differ between a CI runner and a contributor's shell would turn a config
 // difference into a confusing artifact-mismatch failure. One value, in source,
 // reviewed like any other change.
-export const REPO_SLUG = "pjdurden/skills-live"
+export const REPO_SLUG = "pjdurden/claude-skills-live"
 
 export const VALIDATE_BADGE_URL =
   `https://github.com/${REPO_SLUG}/actions/workflows/validate.yml/badge.svg`
