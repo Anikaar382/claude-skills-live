@@ -1,4 +1,4 @@
-# skills-live
+# claude-skills-live
 
 ![validate](https://github.com/pjdurden/claude-skills-live/actions/workflows/validate.yml/badge.svg)
 

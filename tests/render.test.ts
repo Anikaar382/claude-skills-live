@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { REPO_SLUG, VALIDATE_BADGE_URL, renderJson, renderReadme } from "../src/render"
+import { REPO_NAME, REPO_SLUG, VALIDATE_BADGE_URL, renderJson, renderReadme } from "../src/render"
 import type { Entry, FlagReason, SkillsFile } from "../src/schema"
 
 function entry(id: string, stars: number, over: Partial<Entry> = {}): Entry {
@@ -110,11 +110,18 @@ test("rendering with same ids but reversed input order produces byte-identical o
   expect(renderReadme(data1, NOW)).toBe(renderReadme(data2, NOW))
 })
 
+// Asserted against the exported constants rather than a literal URL: hardcoding
+// the slug here is what made this test fail on a rename instead of catching one.
 test("the header carries the static validate workflow badge", () => {
   const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
-  expect(md).toContain(
-    "![validate](https://github.com/pjdurden/skills-live/actions/workflows/validate.yml/badge.svg)",
-  )
+  expect(md).toContain(`![validate](${VALIDATE_BADGE_URL})`)
+  expect(VALIDATE_BADGE_URL).toContain(REPO_SLUG)
+})
+
+test("the title tracks the repo name", () => {
+  const md = renderReadme({ version: 1, entries: [entry("a/a", 1)] }, NOW)
+  expect(md.split("\n")[0]).toBe(`# ${REPO_NAME}`)
+  expect(REPO_SLUG.endsWith(`/${REPO_NAME}`)).toBe(true)
 })
 
 test("the badge sits in the header, above the first kind section", () => {

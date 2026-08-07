@@ -20,6 +20,10 @@ export const REPO_SLUG = "pjdurden/claude-skills-live"
 export const VALIDATE_BADGE_URL =
   `https://github.com/${REPO_SLUG}/actions/workflows/validate.yml/badge.svg`
 
+// Derived, not hardcoded: a rename should move the title with the badge rather
+// than leaving the page introducing itself by its old name.
+export const REPO_NAME = REPO_SLUG.split("/")[1] ?? REPO_SLUG
+
 export const KIND_ORDER = ["framework", "skill", "plugin", "mcp", "tool"] as const
 
 export const KIND_HEADING: Record<Kind, string> = {
@@ -91,7 +95,7 @@ function row(e: Entry): string {
 export function renderReadme(data: SkillsFile, now: Date): string {
   const active = activeOf(data)
   const lines: string[] = [
-    "# skills-live",
+    `# ${REPO_NAME}`,
     "",
     // Static markdown, so it goes red on its own with nothing running. The
     // generated badge below can only ever report what the last successful run
