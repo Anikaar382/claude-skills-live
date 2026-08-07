@@ -8,7 +8,7 @@ import {
   flaggedOf,
   type FlaggedEntry,
 } from "./render"
-import type { GraveyardEntry, GraveyardFile, SkillsFile } from "./schema"
+import type { Entry, GraveyardEntry, GraveyardFile, SkillsFile } from "./schema"
 
 const REPO_URL = `https://github.com/${REPO_SLUG}`
 
@@ -24,18 +24,6 @@ function escapeHtml(text: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
-}
-
-// Mirrors GitHub's own heading-to-anchor algorithm (lowercase, drop anything
-// that isn't a word character, hyphen or space, then turn spaces into
-// hyphens) so the category cards link straight to the matching README
-// section instead of just the repo root.
-function githubAnchor(heading: string): string {
-  return heading
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\- ]+/g, "")
-    .replace(/ +/g, "-")
 }
 
 function sortedGraveyard(graveyard: GraveyardFile): GraveyardEntry[] {
@@ -73,23 +61,197 @@ function stat(value: string, label: string): string {
   return `<div class="stat"><div class="stat-value">${value}</div><div class="stat-label">${escapeHtml(label)}</div></div>`
 }
 
+// Same total order renderReadme's `row()` uses (stars descending, id ascending
+// as the tiebreaker) so the README and the site never disagree about which
+// entry leads a category.
+function sortedGroup(active: Entry[], kind: Entry["kind"]): Entry[] {
+  return active
+    .filter((e) => e.kind === kind)
+    .sort((a, b) => b.metrics.stars - a.metrics.stars || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+}
+
+// `data-search` and `data-tags` are read by the inline script, never written
+// into the DOM as markup — filtering works by comparing these attribute
+// strings and toggling `hidden`, so escaping them the same way as any other
+// interpolated value is enough; there is no innerHTML path for it to escape.
+function entryCard(e: Entry): string {
+  const id = escapeHtml(e.id)
+  const url = escapeHtml(e.url)
+  const summary = escapeHtml(e.summary)
+  const stars = e.metrics.stars.toLocaleString("en-US")
+  const pushed = escapeHtml(e.metrics.pushed_at)
+  const tags = [...e.tags].sort()
+  const searchBlob = escapeHtml(`${e.id} ${e.summary} ${tags.join(" ")}`.toLowerCase())
+  const tagsJson = escapeHtml(JSON.stringify(tags))
+  const tagSpans = tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join("")
+  return (
+    `<article class="entry-card" data-search="${searchBlob}" data-tags="${tagsJson}">` +
+    `<div class="entry-head"><a class="entry-id" href="${url}">${id}</a>` +
+    `<span class="entry-stars">★ ${stars}</span></div>` +
+    `<div class="entry-pushed">pushed ${pushed}</div>` +
+    (tagSpans.length > 0 ? `<div class="entry-tags">${tagSpans}</div>` : "") +
+    `<p class="entry-summary">${summary}</p>` +
+    `</article>`
+  )
+}
+
+function kindGroup(active: Entry[], kind: Entry["kind"]): string | null {
+  const group = sortedGroup(active, kind)
+  if (group.length === 0) return null
+  const heading = KIND_HEADING[kind]
+  return (
+    `<div class="kind-group" id="group-${kind}">` +
+    `<h3>${escapeHtml(heading)} <span class="kind-count">${group.length}</span></h3>` +
+    `<div class="entry-grid">${group.map(entryCard).join("")}</div>` +
+    `</div>`
+  )
+}
+
+// Tag chips are built from the tags actually present so the filter UI never
+// offers a tag that would zero out every entry. Sorted by count descending,
+// then tag name ascending — a total order, so the chip list is byte-stable
+// under the reproducibility gate regardless of Map insertion order.
+function tagCounts(active: Entry[]): Array<{ tag: string; count: number }> {
+  const counts = new Map<string, number>()
+  for (const e of active) {
+    for (const t of e.tags) counts.set(t, (counts.get(t) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0))
+}
+
+function tagChip(t: { tag: string; count: number }): string {
+  const tag = escapeHtml(t.tag)
+  return (
+    `<button type="button" class="tag-chip" data-tag="${tag}">${tag} ` +
+    `<span class="chip-count">${t.count}</span></button>`
+  )
+}
+
+// The inline script is a static string with no interpolated data — the data
+// it reads lives entirely in `data-*` attributes already escaped above — so
+// it cannot break byte-determinism and needs no separate templating.
+const FILTER_SCRIPT = `
+(function () {
+  var filters = document.getElementById("filters");
+  var searchInput = document.getElementById("search-input");
+  var chipsContainer = document.getElementById("tag-chips");
+  var resultCount = document.getElementById("result-count");
+  var clearBtn = document.getElementById("clear-filters");
+  if (!filters || !searchInput || !chipsContainer || !resultCount || !clearBtn) return;
+
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".entry-card"));
+  var groups = Array.prototype.slice.call(document.querySelectorAll(".kind-group"));
+  var total = cards.length;
+  var activeTags = Object.create(null);
+  var query = "";
+
+  function cardTags(card) {
+    try {
+      return JSON.parse(card.getAttribute("data-tags") || "[]");
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function matches(card) {
+    if (query) {
+      var hay = card.getAttribute("data-search") || "";
+      if (hay.indexOf(query) === -1) return false;
+    }
+    var selected = Object.keys(activeTags);
+    if (selected.length > 0) {
+      var tags = cardTags(card);
+      var any = false;
+      for (var i = 0; i < selected.length; i++) {
+        if (tags.indexOf(selected[i]) !== -1) {
+          any = true;
+          break;
+        }
+      }
+      if (!any) return false;
+    }
+    return true;
+  }
+
+  function apply() {
+    var shown = 0;
+    for (var i = 0; i < cards.length; i++) {
+      var ok = matches(cards[i]);
+      cards[i].hidden = !ok;
+      if (ok) shown += 1;
+    }
+    for (var g = 0; g < groups.length; g++) {
+      var visible = groups[g].querySelectorAll(".entry-card:not([hidden])").length;
+      groups[g].hidden = visible === 0;
+    }
+    resultCount.textContent = "Showing " + shown + " of " + total;
+    var hasFilter = query !== "" || Object.keys(activeTags).length > 0;
+    clearBtn.hidden = !hasFilter;
+  }
+
+  searchInput.addEventListener("input", function () {
+    query = searchInput.value.trim().toLowerCase();
+    apply();
+  });
+
+  chipsContainer.addEventListener("click", function (ev) {
+    var target = ev.target;
+    while (target && target !== chipsContainer && !target.classList.contains("tag-chip")) {
+      target = target.parentNode;
+    }
+    if (!target || target === chipsContainer) return;
+    var tag = target.getAttribute("data-tag");
+    if (activeTags[tag]) {
+      delete activeTags[tag];
+      target.classList.remove("active");
+    } else {
+      activeTags[tag] = true;
+      target.classList.add("active");
+    }
+    apply();
+  });
+
+  clearBtn.addEventListener("click", function () {
+    query = "";
+    searchInput.value = "";
+    activeTags = Object.create(null);
+    var active = chipsContainer.querySelectorAll(".tag-chip.active");
+    for (var i = 0; i < active.length; i++) active[i].classList.remove("active");
+    apply();
+  });
+
+  filters.hidden = false;
+  apply();
+})();
+`
+
 export function renderSite(data: SkillsFile, graveyard: GraveyardFile, now: Date): string {
   const active = activeOf(data)
   const flagged = flaggedOf(data)
   const buried = sortedGraveyard(graveyard)
   const checked = badgeTime(active, now)
 
+  // Local jump links straight to the matching group in the listing below —
+  // the stat cards used to point out to GitHub, which was the entire gap this
+  // page exists to close: a reader clicking a number should land on the
+  // entries, not leave the page to see them.
   const categories = KIND_ORDER.map((kind) => {
     const count = active.filter((e) => e.kind === kind).length
     if (count === 0) return null
     const heading = KIND_HEADING[kind]
-    const href = `${REPO_URL}#${githubAnchor(heading)}`
     return (
-      `<a class="category" href="${escapeHtml(href)}">` +
+      `<a class="category" href="#group-${kind}">` +
       `<div class="category-count">${count}</div>` +
       `<div class="category-name">${escapeHtml(heading)}</div></a>`
     )
   }).filter((c): c is string => c !== null)
+
+  const groups = KIND_ORDER.map((kind) => kindGroup(active, kind)).filter(
+    (g): g is string => g !== null,
+  )
+  const chips = tagCounts(active).map(tagChip).join("")
 
   const flaggedSection =
     flagged.length > 0
@@ -258,6 +420,143 @@ footer {
   font-size: 0.85rem;
 }
 footer p { margin: 0.35rem 0; }
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.filters[hidden] {
+  display: none;
+}
+.filters-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.search-input {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.95rem;
+}
+.clear-filters {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.clear-filters[hidden] {
+  display: none;
+}
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.tag-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+}
+.tag-chip .chip-count {
+  color: var(--muted);
+}
+.tag-chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.result-count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.kind-group {
+  margin-top: 2rem;
+}
+.kind-group[hidden] {
+  display: none;
+}
+.kind-group h3 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+}
+.kind-group h3 .kind-count {
+  color: var(--fg);
+  font-weight: 700;
+}
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+.entry-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: var(--card-bg);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.entry-card[hidden] {
+  display: none;
+}
+.entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.entry-id {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.entry-stars {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.entry-pushed {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+}
+.entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+.entry-tags .tag {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  color: var(--muted);
+}
+.entry-summary {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
 </style>
 </head>
 <body>
@@ -285,6 +584,20 @@ this list is shrinking, that is the system working, not failing.</span></p>
 ${categories.join("\n")}
 </div>
 </section>
+<section class="listing-section">
+<h2>Browse all ${active.length} entries</h2>
+<div class="filters" id="filters" hidden>
+<div class="filters-row">
+<input type="search" id="search-input" class="search-input" placeholder="Search id, tag or summary" aria-label="Search entries">
+<button type="button" id="clear-filters" class="clear-filters" hidden>Clear filters</button>
+</div>
+<div class="tag-chips" id="tag-chips">
+${chips}
+</div>
+<p class="result-count" id="result-count" aria-live="polite"></p>
+</div>
+${groups.join("\n")}
+</section>
 <section class="flagged-section">
 <h2>Currently flagged</h2>
 <p>Delisted from the tables on GitHub. These come back automatically if the repo does.</p>
@@ -306,6 +619,7 @@ repository's own description and remains the repository owner's — see
 <a href="${escapeHtml(REPO_URL)}/blob/main/LICENSE-DATA">LICENSE-DATA</a>.</p>
 </footer>
 </main>
+<script>${FILTER_SCRIPT}</script>
 </body>
 </html>
 `
