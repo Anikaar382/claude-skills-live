@@ -65,27 +65,41 @@ confirm the refresh PR opens, gets a `validate` check, and auto-merges, while th
 discover PR opens, gets a check, and waits for a human. If step 2 was skipped,
 the refresh PR opening but never merging is the predicted failure, not a new bug.
 
-## 4. The curation pass — outstanding
+## 4. The curation pass — done
 
-The seed run's 343 entries were never curated. Every one is `kind: skill` with
-empty `tags`, and its `summary` is the upstream repo's own GitHub description,
-mechanically truncated to 120 characters.
+Completed 2026-08-07 over all 342 seeded entries.
 
-Consequences today:
+- Real `kind` on every entry: 133 `tool`, 86 `plugin`, 84 `skill`, 29
+  `framework`, 10 `mcp`. The README is six sections rather than one flat table.
+- 1–3 `tags` per entry from a fixed 25-term vocabulary, rendered as a Tags
+  column. Tags are sorted at render time, because a curator can write them in
+  any order and the reproducibility gate compares bytes.
+- Every `summary` rewritten. 201 were upstream descriptions cut mid-sentence;
+  none are now.
+- 15 entries removed as out of scope, recorded in `graveyard.yaml` under the
+  `offtopic` reason so `knownIds()` keeps them out permanently.
 
-- `README.md` is a single undifferentiated 311-row table. The renderer groups by
-  `kind`, so with one kind in use there is nothing to group.
-- 202 of 343 summaries are exactly 120 characters, i.e. cut mid-sentence.
-- `LICENSE-DATA` scopes the CC0 dedication around this: it covers the
-  compilation, schema and derived facts, and explicitly excludes `summary`, which
-  remains its upstream author's. That scoping is correct but it is a workaround
-  for uncurated data, not a substitute for curating it.
+Keep `LICENSE-DATA`'s scoping as written even though summaries are now
+original. It says the `summary` field *may* quote upstream text, and three short
+factual ones still substantially match — "Dashboard for monitoring Claude Code
+sessions" has no meaningfully different phrasing. The permissive wording costs
+nothing and stays true as new entries arrive from `discover`, which still seeds
+summaries from upstream descriptions until a human rewrites them.
 
-Before publishing, go through `skills.yaml` and set the real `kind`, add `tags`,
-and rewrite the summaries in your own words. Then `bun run src/cli.ts render`.
+When you merge a discover PR, rewrite the new summaries as part of the review.
+That is what the PR body asks for, and it is what keeps the licensing claim and
+the prose quality true over time.
 
 ## Known gaps carried into M3
 
+- **The discovery inclusion bar is too loose.** Curation removed 15 entries
+  worth 231k stars between them — a Kubernetes platform, a Python shell, an SVG
+  icon library, two generic chat clients. All reached the index through a stray
+  `claude-code`-family topic tag on an unrelated repo. `isEligible` checks
+  known/archived/stars/blocklists and nothing else: it never checks `pushed_at`,
+  and `RepoMeta` carries no `fork` field at all, so the bar's stated "not an
+  undiverged fork" rule is unimplemented. Until that is tightened, every
+  discover PR needs a real human read rather than a skim.
 - **Nothing is ever removed.** The reaper flags and delists; actual removal is
   M3's vote flow. `README.md` says "flagged and delisted" accordingly.
 - **`graveyard.yaml` holds only content-policy blocks**, not reaped repos, so the
