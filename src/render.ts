@@ -1,6 +1,6 @@
 import type { Entry, Flag, Kind, SkillsFile } from "./schema"
 
-type FlaggedEntry = Entry & { flag: Flag }
+export type FlaggedEntry = Entry & { flag: Flag }
 
 // ⚠️ MUST BE UPDATED AT FIRST PUSH, and on any later rename or transfer.
 //
@@ -34,13 +34,17 @@ export const KIND_HEADING: Record<Kind, string> = {
   tool: "Tools",
 }
 
-function activeOf(data: SkillsFile): Entry[] {
+// Exported: site.ts is a sibling renderer over the same SkillsFile and needs
+// the same active/flagged partitioning and the same badge-time derivation, so
+// it reuses these rather than re-deriving them and risking the two pages
+// disagreeing about what "active" or "the last check" means.
+export function activeOf(data: SkillsFile): Entry[] {
   return data.entries.filter((e) => e.status === "active")
 }
 
 // Most recently flagged first, ties broken by id, so the output is a total
 // order and therefore byte-stable under the reproducibility gate.
-function flaggedOf(data: SkillsFile): FlaggedEntry[] {
+export function flaggedOf(data: SkillsFile): FlaggedEntry[] {
   return data.entries
     .filter((e): e is FlaggedEntry => e.status === "flagged" && e.flag !== undefined)
     .sort(
@@ -50,7 +54,7 @@ function flaggedOf(data: SkillsFile): FlaggedEntry[] {
     )
 }
 
-function badgeTime(active: Entry[], now: Date): string {
+export function badgeTime(active: Entry[], now: Date): string {
   const latest = active.reduce<string | null>(
     (acc, e) => (acc === null || e.metrics.last_checked > acc ? e.metrics.last_checked : acc),
     null,

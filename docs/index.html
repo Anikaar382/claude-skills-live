@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>claude-skills-live</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #5f6368;
+  --border: #e2e2e2;
+  --accent: #0b5fff;
+  --card-bg: #f6f7f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --fg: #eaeaea;
+    --muted: #9aa0a6;
+    --border: #2a2d34;
+    --accent: #6ea8ff;
+    --card-bg: #171a20;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 2rem 1.25rem 4rem;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+main {
+  max-width: 960px;
+  margin: 0 auto;
+}
+header h1 {
+  font-size: 2rem;
+  margin: 0 0 0.35rem;
+}
+header p {
+  color: var(--muted);
+  margin: 0;
+  font-size: 1.05rem;
+}
+section {
+  margin-top: 3rem;
+}
+h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.75rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.stat {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.1rem 1rem;
+}
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+.claim p {
+  max-width: 68ch;
+}
+.claim .shrink {
+  color: var(--muted);
+}
+.categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+.category {
+  display: block;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  text-decoration: none;
+  color: var(--fg);
+}
+.category:hover {
+  border-color: var(--accent);
+}
+.category-count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.category-name {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  min-width: 480px;
+}
+th, td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tbody tr:last-child td {
+  border-bottom: none;
+}
+th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+a { color: var(--accent); }
+.empty {
+  color: var(--muted);
+}
+footer {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+footer p { margin: 0.35rem 0; }
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>claude-skills-live</h1>
+<p>An automatically verified index of Claude Code and Agent Skills tooling.</p>
+</header>
+<div class="stats">
+<div class="stat"><div class="stat-value">296</div><div class="stat-label">Published</div></div>
+<div class="stat"><div class="stat-value">31</div><div class="stat-label">Flagged and delisted</div></div>
+<div class="stat"><div class="stat-value">18</div><div class="stat-label">Permanently excluded</div></div>
+<div class="stat"><div class="stat-value">2026-08-07 00:59 UTC</div><div class="stat-label">Last checked</div></div>
+</div>
+<section class="claim">
+<h2>How this stays honest</h2>
+<p>Every entry is re-checked daily against the GitHub API. Anything archived, deleted, or gone
+90 days without a push is flagged and delisted automatically, with no human in the loop. An
+entry returns to the tables by itself the instant the condition clears. <span class="shrink">If
+this list is shrinking, that is the system working, not failing.</span></p>
+</section>
+<section class="categories-section">
+<h2>By category</h2>
+<div class="categories">
+<a class="category" href="https://github.com/pjdurden/claude-skills-live#frameworks-and-meta-harnesses"><div class="category-count">28</div><div class="category-name">Frameworks and meta-harnesses</div></a>
+<a class="category" href="https://github.com/pjdurden/claude-skills-live#skills"><div class="category-count">74</div><div class="category-name">Skills</div></a>
+<a class="category" href="https://github.com/pjdurden/claude-skills-live#plugins"><div class="category-count">76</div><div class="category-name">Plugins</div></a>
+<a class="category" href="https://github.com/pjdurden/claude-skills-live#mcp-servers"><div class="category-count">10</div><div class="category-name">MCP servers</div></a>
+<a class="category" href="https://github.com/pjdurden/claude-skills-live#tools"><div class="category-count">108</div><div class="category-name">Tools</div></a>
+</div>
+</section>
+<section class="flagged-section">
+<h2>Currently flagged</h2>
+<p>Delisted from the tables on GitHub. These come back automatically if the repo does.</p>
+<div class="table-wrap"><table><thead><tr><th>Repo</th><th>Reason</th><th>Since</th><th>What</th></tr></thead><tbody><tr><td><a href="https://github.com/24kchengYe/human-skill-tree">24kchengYe/human-skill-tree</a></td><td>stale</td><td>2026-08-06</td><td>Guides a personal learning curriculum across 30+ skills from K-12 topics to career and social skills.</td></tr><tr><td><a href="https://github.com/BayramAnnakov/claude-reflect">BayramAnnakov/claude-reflect</a></td><td>stale</td><td>2026-08-06</td><td>Captures corrections and preferences from sessions and syncs them into CLAUDE.md and AGENTS.md.</td></tr><tr><td><a href="https://github.com/Ibrahim-3d/orchestrator-supaconductor">Ibrahim-3d/orchestrator-supaconductor</a></td><td>stale</td><td>2026-08-06</td><td>Multi-agent orchestration system for Claude Code with parallel execution and automated quality gates.</td></tr><tr><td><a href="https://github.com/RKiding/Awesome-finance-skills">RKiding/Awesome-finance-skills</a></td><td>stale</td><td>2026-08-06</td><td>Collection of open-source finance analysis skills for AI agents.</td></tr><tr><td><a href="https://github.com/Shanyin-ai/shanyin-screenwriting-master">Shanyin-ai/shanyin-screenwriting-master</a></td><td>stale</td><td>2026-08-06</td><td>Screenwriting skill covering short films, feature-length movies, and TV series, from outline to full script.</td></tr><tr><td><a href="https://github.com/SnailSploit/Claude-Red">SnailSploit/Claude-Red</a></td><td>stale</td><td>2026-08-06</td><td>Curated library of offensive-security skills covering SQL injection, exploit development, and EDR evasion.</td></tr><tr><td><a href="https://github.com/agenticnotetaking/arscontexta">agenticnotetaking/arscontexta</a></td><td>stale</td><td>2026-08-06</td><td>Claude Code plugin that builds a personalized knowledge base as markdown files from your conversations.</td></tr><tr><td><a href="https://github.com/alirezarezvani/claude-code-skill-factory">alirezarezvani/claude-code-skill-factory</a></td><td>stale</td><td>2026-08-06</td><td>Toolkit for generating and deploying Claude Skills, slash commands, and prompt templates at scale.</td></tr><tr><td><a href="https://github.com/bevibing/tutor-skills">bevibing/tutor-skills</a></td><td>stale</td><td>2026-08-06</td><td>Converts PDFs, documents, and codebases into structured Obsidian study vaults for learning.</td></tr><tr><td><a href="https://github.com/ccplugins/awesome-claude-code-plugins">ccplugins/awesome-claude-code-plugins</a></td><td>stale</td><td>2026-08-06</td><td>Curated list of Claude Code plugins: slash commands, subagents, MCP servers, and hooks.</td></tr><tr><td><a href="https://github.com/conorluddy/xclaude-plugin">conorluddy/xclaude-plugin</a></td><td>stale</td><td>2026-08-06</td><td>Claude Code plugin bundling modular MCP tools for Xcode and IDB to reduce token use in iOS development.</td></tr><tr><td><a href="https://github.com/davegoldblatt/total-recall">davegoldblatt/total-recall</a></td><td>stale</td><td>2026-08-06</td><td>Persistent memory plugin for Claude Code with a tiered memory system, write gates, and correction propagation.</td></tr><tr><td><a href="https://github.com/heilcheng/awesome-agent-skills">heilcheng/awesome-agent-skills</a></td><td>stale</td><td>2026-08-06</td><td>Curated tutorials, guides, and directories covering Agent Skills across AI coding tools.</td></tr><tr><td><a href="https://github.com/hesamsheikh/octogent">hesamsheikh/octogent</a></td><td>stale</td><td>2026-08-06</td><td>Dashboard sitting over Claude Code to manage context, automation, and multiple concurrent agents.</td></tr><tr><td><a href="https://github.com/kazukinagata/shinkoku">kazukinagata/shinkoku</a></td><td>stale</td><td>2026-08-06</td><td>Automates Japanese tax filing, from bookkeeping through e-Tax submission, as an AI agent plugin.</td></tr><tr><td><a href="https://github.com/keskinonur/claude-code-ios-dev-guide">keskinonur/claude-code-ios-dev-guide</a></td><td>stale</td><td>2026-08-06</td><td>Guide for using Claude Code with PRD-driven workflows and extended thinking for Swift and SwiftUI iOS development.</td></tr><tr><td><a href="https://github.com/lackeyjb/playwright-skill">lackeyjb/playwright-skill</a></td><td>stale</td><td>2026-08-06</td><td>Claude Code skill for browser automation and end-to-end testing using Playwright.</td></tr><tr><td><a href="https://github.com/memvid/claude-brain">memvid/claude-brain</a></td><td>stale</td><td>2026-08-06</td><td>Stores Claude Code&#39;s memory in a single portable file for persistent context without a database.</td></tr><tr><td><a href="https://github.com/minsight-ai-info/AI-Search-Hub">minsight-ai-info/AI-Search-Hub</a></td><td>stale</td><td>2026-08-06</td><td>Aggregates AI search engines like Gemini, Grok, and Doubao to research trends, news, and travel plans.</td></tr><tr><td><a href="https://github.com/muxuuu/serenity-skill">muxuuu/serenity-skill</a></td><td>stale</td><td>2026-08-06</td><td>Agent skill for researching supply-chain bottlenecks and their impact on stock picks.</td></tr><tr><td><a href="https://github.com/parcadei/Continuous-Claude-v3">parcadei/Continuous-Claude-v3</a></td><td>stale</td><td>2026-08-06</td><td>Claude Code plugin managing context through ledgers and handoffs, with isolated-window agent orchestration.</td></tr><tr><td><a href="https://github.com/quant-sentiment-ai/claude-equity-research">quant-sentiment-ai/claude-equity-research</a></td><td>stale</td><td>2026-08-06</td><td>Claude Code plugin generating equity research with fundamental analysis, technical indicators, and risk assessment.</td></tr><tr><td><a href="https://github.com/rohitg00/awesome-claude-design">rohitg00/awesome-claude-design</a></td><td>stale</td><td>2026-08-06</td><td>Curated collection of Claude Design prompts, remix recipes, skills, and video teardowns organized by aesthetic style.</td></tr><tr><td><a href="https://github.com/seulee26/mckinsey-pptx">seulee26/mckinsey-pptx</a></td><td>stale</td><td>2026-08-06</td><td>Claude Code plugin that generates McKinsey-style PowerPoint decks using template slides and a template-picking subagent.</td></tr><tr><td><a href="https://github.com/softaworks/agent-toolkit">softaworks/agent-toolkit</a></td><td>stale</td><td>2026-08-06</td><td>Collection of packaged skills that extend AI coding agents for development, documentation, and planning.</td></tr><tr><td><a href="https://github.com/travisvn/awesome-claude-skills">travisvn/awesome-claude-skills</a></td><td>stale</td><td>2026-08-06</td><td>Curated list of Claude Skills, resources, and tools for customizing Claude AI and Claude Code workflows.</td></tr><tr><td><a href="https://github.com/vladikk/modularity">vladikk/modularity</a></td><td>stale</td><td>2026-08-06</td><td>Claude Code plugin that designs modular systems and reviews codebases for coupling and cohesion problems.</td></tr><tr><td><a href="https://github.com/winfunc/opcode">winfunc/opcode</a></td><td>stale</td><td>2026-08-06</td><td>GUI application for Claude Code to create custom agents, manage sessions, and run background agents.</td></tr><tr><td><a href="https://github.com/yeap531/word-format-skill">yeap531/word-format-skill</a></td><td>stale</td><td>2026-08-06</td><td>Replicates a reference Word document&#39;s typography onto new content via an HTML-to-Word clipboard bridge.</td></tr><tr><td><a href="https://github.com/zanwei/design-dna">zanwei/design-dna</a></td><td>stale</td><td>2026-08-06</td><td>Extracts design tokens and style attributes from reference UIs into a JSON spec, then generates matching UI.</td></tr><tr><td><a href="https://github.com/zscole/adversarial-spec">zscole/adversarial-spec</a></td><td>stale</td><td>2026-08-06</td><td>Claude Code plugin that refines product specs through iterative debate among multiple LLMs until consensus.</td></tr></tbody></table></div>
+</section>
+<section class="graveyard-section">
+<h2>Permanently excluded</h2>
+<p><code>blocked</code> entries leak or reproduce a proprietary source (a leaked system prompt,
+for example) and are excluded on content grounds. <code>offtopic</code> entries are real,
+legitimate software that simply is not Claude Code or Agent Skills tooling; being wrong for this
+list is not a judgement on the project itself. Neither kind is reconsidered automatically.</p>
+<div class="table-wrap"><table><thead><tr><th>Repo</th><th>Reason</th><th>Removed</th></tr></thead><tbody><tr><td><a href="https://github.com/CherryHQ/cherry-studio">CherryHQ/cherry-studio</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/Natively-AI-assistant/natively-cluely-ai-assistant">Natively-AI-assistant/natively-cluely-ai-assistant</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/chatboxai/chatbox">chatboxai/chatbox</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/codeaashu/claude-code">codeaashu/claude-code</a></td><td>blocked</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/dstackai/dstack">dstackai/dstack</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/glincker/thesvg">glincker/thesvg</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/heshengtao/super-agent-party">heshengtao/super-agent-party</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/ikaijua/Awesome-AITools">ikaijua/Awesome-AITools</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/jeecgboot/JeecgBoot">jeecgboot/JeecgBoot</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/kubesphere/kubesphere">kubesphere/kubesphere</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/kyegomez/OpenMythos">kyegomez/OpenMythos</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/metalbear-co/mirrord">metalbear-co/mirrord</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/rowboatlabs/rowboat">rowboatlabs/rowboat</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/tinyplex/tinybase">tinyplex/tinybase</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/xixu-me/xget">xixu-me/xget</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/xonsh/xonsh">xonsh/xonsh</a></td><td>offtopic</td><td>2026-08-07</td></tr><tr><td><a href="https://github.com/Piebald-AI/claude-code-system-prompts">Piebald-AI/claude-code-system-prompts</a></td><td>blocked</td><td>2026-08-06</td></tr><tr><td><a href="https://github.com/asgeirtj/system_prompts_leaks">asgeirtj/system_prompts_leaks</a></td><td>blocked</td><td>2026-08-06</td></tr></tbody></table></div>
+</section>
+<footer>
+<p>Generated from <a href="https://github.com/pjdurden/claude-skills-live/blob/main/skills.yaml">skills.yaml</a> in
+<a href="https://github.com/pjdurden/claude-skills-live">pjdurden/claude-skills-live</a>. Do not edit this page directly.</p>
+<p>Code MIT. Data CC0, except the <code>summary</code> field, which is quoted verbatim from each
+repository's own description and remains the repository owner's — see
+<a href="https://github.com/pjdurden/claude-skills-live/blob/main/LICENSE-DATA">LICENSE-DATA</a>.</p>
+</footer>
+</main>
+</body>
+</html>

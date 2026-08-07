@@ -1,6 +1,7 @@
 import { STALE_DAYS, daysBetween } from "./reap"
 import { renderJson, renderReadme } from "./render"
 import type { Entry, GraveyardFile, SkillsFile } from "./schema"
+import { renderSite } from "./site"
 
 export const MAX_CHECK_AGE_HOURS = 48
 
@@ -103,8 +104,10 @@ export function checkGraveyard(data: SkillsFile, graveyard: GraveyardFile): stri
 
 export function checkReproducible(
   data: SkillsFile,
+  graveyard: GraveyardFile,
   readme: string,
   json: string,
+  site: string,
   now: Date,
 ): string[] {
   const problems: string[] = []
@@ -114,13 +117,21 @@ export function checkReproducible(
   if (renderJson(data) !== json) {
     problems.push("data/skills.json does not match renderer output; run `bun run render`")
   }
+  // docs/index.html is held to the same bar as the README: a hand-edited
+  // landing page is exactly the kind of drift this gate exists to catch, and
+  // it is the page a Product Hunt visitor actually lands on.
+  if (renderSite(data, graveyard, now) !== site) {
+    problems.push("docs/index.html does not match renderer output; run `bun run render`")
+  }
   return problems
 }
 
 export function validate(
   data: SkillsFile,
+  graveyard: GraveyardFile,
   readme: string,
   json: string,
+  site: string,
   now: Date,
   opts: ValidateOptions = {},
 ): string[] {
@@ -131,6 +142,6 @@ export function validate(
     // archived repo active must fail even on a PR build. Its 90-day limb is
     // time-dependent and honours the same `staleness` option.
     ...checkNoDead(data, now, { staleness }),
-    ...checkReproducible(data, readme, json, now),
+    ...checkReproducible(data, graveyard, readme, json, site, now),
   ]
 }

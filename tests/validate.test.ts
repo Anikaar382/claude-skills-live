@@ -1,7 +1,10 @@
 import { test, expect } from "bun:test"
 import { renderJson, renderReadme } from "../src/render"
+import { renderSite } from "../src/site"
 import { checkGraveyard, checkNoDead, checkReproducible, checkStaleness, validate } from "../src/validate"
 import type { Entry, GraveyardFile, SkillsFile } from "../src/schema"
+
+const EMPTY_GRAVEYARD: GraveyardFile = { version: 1, entries: [] }
 
 function entry(id: string, checked: string, over: Partial<Entry> = {}): Entry {
   return {
@@ -42,48 +45,98 @@ test("ignores flagged entries in the staleness gate", () => {
 
 test("passes reproducibility when artifacts match the renderer", () => {
   const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-08-05T04:00:00Z")] }
-  const problems = checkReproducible(data, renderReadme(data, NOW), renderJson(data), NOW)
+  const problems = checkReproducible(
+    data,
+    EMPTY_GRAVEYARD,
+    renderReadme(data, NOW),
+    renderJson(data),
+    renderSite(data, EMPTY_GRAVEYARD, NOW),
+    NOW,
+  )
   expect(problems).toEqual([])
 })
 
 test("fails reproducibility when the README was hand-edited", () => {
   const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-08-05T04:00:00Z")] }
   const tampered = renderReadme(data, NOW) + "\nsneaky manual addition\n"
-  const problems = checkReproducible(data, tampered, renderJson(data), NOW)
+  const problems = checkReproducible(
+    data,
+    EMPTY_GRAVEYARD,
+    tampered,
+    renderJson(data),
+    renderSite(data, EMPTY_GRAVEYARD, NOW),
+    NOW,
+  )
   expect(problems.length).toBe(1)
   expect(problems[0]).toContain("README.md")
 })
 
 test("fails reproducibility when the JSON export is stale", () => {
   const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-08-05T04:00:00Z")] }
-  const problems = checkReproducible(data, renderReadme(data, NOW), "{}\n", NOW)
+  const problems = checkReproducible(
+    data,
+    EMPTY_GRAVEYARD,
+    renderReadme(data, NOW),
+    "{}\n",
+    renderSite(data, EMPTY_GRAVEYARD, NOW),
+    NOW,
+  )
   expect(problems[0]).toContain("data/skills.json")
 })
 
-test("validate aggregates both gates", () => {
+test("fails reproducibility when the site was hand-edited", () => {
+  const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-08-05T04:00:00Z")] }
+  const problems = checkReproducible(
+    data,
+    EMPTY_GRAVEYARD,
+    renderReadme(data, NOW),
+    renderJson(data),
+    "<html>tampered</html>",
+    NOW,
+  )
+  expect(problems.length).toBe(1)
+  expect(problems[0]).toContain("docs/index.html")
+})
+
+test("validate aggregates all three gates", () => {
   const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-01-01T00:00:00Z")] }
-  expect(validate(data, "wrong", "wrong", NOW).length).toBe(3)
+  expect(validate(data, EMPTY_GRAVEYARD, "wrong", "wrong", "wrong", NOW).length).toBe(4)
 })
 
 test("validate defaults to staleness on, and a stale entry fails it", () => {
   const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-01-01T00:00:00Z")] }
-  const problems = validate(data, renderReadme(data, NOW), renderJson(data), NOW)
+  const problems = validate(
+    data,
+    EMPTY_GRAVEYARD,
+    renderReadme(data, NOW),
+    renderJson(data),
+    renderSite(data, EMPTY_GRAVEYARD, NOW),
+    NOW,
+  )
   expect(problems.length).toBe(1)
   expect(problems[0]).toContain("a/b")
 })
 
 test("validate with staleness: false skips the staleness gate for the same stale entry", () => {
   const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-01-01T00:00:00Z")] }
-  const problems = validate(data, renderReadme(data, NOW), renderJson(data), NOW, {
-    staleness: false,
-  })
+  const problems = validate(
+    data,
+    EMPTY_GRAVEYARD,
+    renderReadme(data, NOW),
+    renderJson(data),
+    renderSite(data, EMPTY_GRAVEYARD, NOW),
+    NOW,
+    { staleness: false },
+  )
   expect(problems).toEqual([])
 })
 
 test("validate with staleness: false still runs the reproducibility gate", () => {
   const data: SkillsFile = { version: 1, entries: [entry("a/b", "2026-01-01T00:00:00Z")] }
-  const problems = validate(data, "wrong", "wrong", NOW, { staleness: false })
-  expect(problems.length).toBe(2)
+  const problems = validate(data, EMPTY_GRAVEYARD, "wrong", "wrong", "wrong", NOW, {
+    staleness: false,
+  })
+  expect(problems.length).toBe(3)
 })
 
 test("checkNoDead passes a fresh, unarchived active entry", () => {
@@ -153,9 +206,15 @@ test("--no-staleness does not suppress the no-dead-entries gate", () => {
     metrics: { stars: 10, pushed_at: "2026-08-01", archived: true, last_checked: "2026-08-06T03:55:00Z" },
   })
   const data: SkillsFile = { version: 1, entries: [e] }
-  const problems = validate(data, renderReadme(data, NOW), renderJson(data), NOW, {
-    staleness: false,
-  })
+  const problems = validate(
+    data,
+    EMPTY_GRAVEYARD,
+    renderReadme(data, NOW),
+    renderJson(data),
+    renderSite(data, EMPTY_GRAVEYARD, NOW),
+    NOW,
+    { staleness: false },
+  )
   expect(problems.length).toBe(1)
   expect(problems[0]).toContain("archived")
 })
@@ -245,12 +304,25 @@ test("a PR build does not go red for the age of an entry it never touched", () =
     metrics: { stars: 10, pushed_at: "2026-05-01", archived: false, last_checked: "2026-08-05T04:00:00Z" },
   })
   const data: SkillsFile = { version: 1, entries: [aged] }
-  const prBuild = validate(data, renderReadme(data, NOW), renderJson(data), NOW, {
-    staleness: false,
-  })
+  const prBuild = validate(
+    data,
+    EMPTY_GRAVEYARD,
+    renderReadme(data, NOW),
+    renderJson(data),
+    renderSite(data, EMPTY_GRAVEYARD, NOW),
+    NOW,
+    { staleness: false },
+  )
   expect(prBuild).toEqual([])
   // The same dataset on the scheduled full gate must still fail.
-  const scheduled = validate(data, renderReadme(data, NOW), renderJson(data), NOW)
+  const scheduled = validate(
+    data,
+    EMPTY_GRAVEYARD,
+    renderReadme(data, NOW),
+    renderJson(data),
+    renderSite(data, EMPTY_GRAVEYARD, NOW),
+    NOW,
+  )
   expect(scheduled.length).toBeGreaterThan(0)
   expect(scheduled.some((p) => p.includes("days ago"))).toBe(true)
 })

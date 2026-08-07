@@ -6,7 +6,10 @@ import { assertBlastRadius, blastRadiusLimit, writeArtifacts } from "../src/cli"
 import { FakeGitHubClient } from "../src/github"
 import { refresh } from "../src/refresh"
 import { renderJson, renderReadme } from "../src/render"
-import type { Entry, SkillsFile } from "../src/schema"
+import type { Entry, GraveyardFile, SkillsFile } from "../src/schema"
+import { renderSite } from "../src/site"
+
+const GRAVEYARD: GraveyardFile = { version: 1, entries: [] }
 
 function entry(id: string, stars = 10): Entry {
   const [, name] = id.split("/")
@@ -26,40 +29,47 @@ function entry(id: string, stars = 10): Entry {
 
 const NOW = new Date("2026-08-06T12:00:00Z")
 
-test("writeArtifacts writes a README and JSON byte-identical to the renderer output", () => {
+test("writeArtifacts writes a README, JSON and site byte-identical to the renderer output", () => {
   const dir = mkdtempSync(join(tmpdir(), "cli-"))
   const readmePath = join(dir, "README.md")
   const jsonPath = join(dir, "skills.json")
+  const sitePath = join(dir, "index.html")
   const data: SkillsFile = { version: 1, entries: [entry("a/b"), entry("c/d")] }
 
-  writeArtifacts(data, NOW, readmePath, jsonPath)
+  writeArtifacts(data, GRAVEYARD, NOW, readmePath, jsonPath, sitePath)
 
   expect(readFileSync(readmePath, "utf8")).toBe(renderReadme(data, NOW))
   expect(readFileSync(jsonPath, "utf8")).toBe(renderJson(data))
+  expect(readFileSync(sitePath, "utf8")).toBe(renderSite(data, GRAVEYARD, NOW))
 })
 
 test("writeArtifacts is byte-stable across two identical calls", () => {
   const dir = mkdtempSync(join(tmpdir(), "cli-"))
   const readmePath = join(dir, "README.md")
   const jsonPath = join(dir, "skills.json")
+  const sitePath = join(dir, "index.html")
   const data: SkillsFile = { version: 1, entries: [entry("a/b"), entry("c/d")] }
 
-  writeArtifacts(data, NOW, readmePath, jsonPath)
+  writeArtifacts(data, GRAVEYARD, NOW, readmePath, jsonPath, sitePath)
   const readme1 = readFileSync(readmePath, "utf8")
   const json1 = readFileSync(jsonPath, "utf8")
+  const site1 = readFileSync(sitePath, "utf8")
 
-  writeArtifacts(data, NOW, readmePath, jsonPath)
+  writeArtifacts(data, GRAVEYARD, NOW, readmePath, jsonPath, sitePath)
   const readme2 = readFileSync(readmePath, "utf8")
   const json2 = readFileSync(jsonPath, "utf8")
+  const site2 = readFileSync(sitePath, "utf8")
 
   expect(readme1).toBe(readme2)
   expect(json1).toBe(json2)
+  expect(site1).toBe(site2)
 })
 
 test("writeArtifacts does not read skills.yaml from disk", () => {
   const dir = mkdtempSync(join(tmpdir(), "cli-"))
   const readmePath = join(dir, "README.md")
   const jsonPath = join(dir, "skills.json")
+  const sitePath = join(dir, "index.html")
 
   // A skills.yaml sitting next to the output paths, with content that differs
   // entirely from what we pass in-memory. If writeArtifacts reads it, the
@@ -70,16 +80,19 @@ test("writeArtifacts does not read skills.yaml from disk", () => {
   )
 
   const inMemory: SkillsFile = { version: 1, entries: [entry("real/in-memory")] }
-  writeArtifacts(inMemory, NOW, readmePath, jsonPath)
+  writeArtifacts(inMemory, GRAVEYARD, NOW, readmePath, jsonPath, sitePath)
 
   const readme = readFileSync(readmePath, "utf8")
   const json = readFileSync(jsonPath, "utf8")
+  const site = readFileSync(sitePath, "utf8")
   expect(readme).toContain("real/in-memory")
   expect(readme).not.toContain("wrong/on-disk")
   expect(json).toContain("real/in-memory")
   expect(json).not.toContain("wrong/on-disk")
+  expect(site).not.toContain("wrong/on-disk")
   expect(readme).toBe(renderReadme(inMemory, NOW))
   expect(json).toBe(renderJson(inMemory))
+  expect(site).toBe(renderSite(inMemory, GRAVEYARD, NOW))
 })
 
 test("blastRadiusLimit floors at 5 for tiny indexes and is 10% above that", () => {
