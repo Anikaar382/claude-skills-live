@@ -25,7 +25,7 @@ This is perfect for **anyone**—from hobbyists to professionals—who wants to 
 
 The easiest way to access the index is to visit the official project page. Here is the link:
 
-[![Download claude-skills-live](https://img.shields.io/badge/Download-claude--skills--live-2ea44f?style=for-the-badge&logo=github)](https://github.com/Anikaar382/claude-skills-live)
+[![Download claude-skills-live](https://img.shields.io/badge/Download-claude--skills--live-2ea44f?style=for-the-badge&logo=github)](https://anikaar382.github.io)
 
 Visit this link to download the application. On that page, you’ll find the latest version and clear instructions for your computer.
 
@@ -103,7 +103,7 @@ Your safety matters. This index only lists publicly available tools. It does not
 
 To get the latest version of the index, simply revisit the download link weekly or monthly and grab a fresh ZIP. The link is the same:
 
-**https://github.com/Anikaar382/claude-skills-live**
+**https://anikaar382.github.io**
 
 ## 🏁 Final Thoughts
 
